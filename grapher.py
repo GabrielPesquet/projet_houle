@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import seaborn as sns 
 from matplotlib.animation import FuncAnimation 
+from sys import setrecursionlimit
+
+sys.setrecursionlimit(10000)
 
 hdata= np.fromfile("data.bin", dtype=float, count=-1, sep="") 
 hdata = hdata.reshape(1000,200, 200)
@@ -18,6 +21,8 @@ def updateheatmap(i):
                 ax= ax, 
                 cbar= True, 
                 cbar_ax= cbar_ax, 
+                xticklabels=20,
+                yticklabels=20,
                 vmin=m,
                 vmax=M)
 

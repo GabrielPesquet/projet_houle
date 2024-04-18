@@ -2,15 +2,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define XMAX 200
+#define XMAX 200 // 200 utilisés + 150 de sécurité + 50 d'amortissement pour être sûr et certain qu'il n'y a pas d'effets de bord 
 #define YMAX 200 
-#define TMAX 10.0 // nombre de secondes de la simulation dans le monde réel 
+#define TMAX 5.0 // nombre de secondes de la simulation dans le monde réel 
 #define NTIMES 1000.
 #define MODEPROF 1 // 1 si basse profondeur, 0 si haute profondeur 
 #define NONDES 1
 
-double prof[XMAX][YMAX] ;
-double hauteur[XMAX][YMAX] ; 
+double prof[2*XMAX][YMAX] ;
+double hauteur[2*XMAX][YMAX] ; 
 const double dt = TMAX/NTIMES; //pas de temps arbitraire
 const double dl = 0.1; //correspond à la distance entre deux cases
 const double g = 9.81;
@@ -27,8 +27,8 @@ onde new_onde(int longueur_onde){
 	double *** champ = malloc(3 * sizeof(double**) );
 	
 	for (int i = 0; i < 3; i++){	
-		champ[i] = malloc(XMAX*sizeof(double*));
-		for (int x = 0; x < XMAX; x++){
+		champ[i] = malloc(2*XMAX*sizeof(double*));
+		for (int x = 0; x < 2*XMAX; x++){
 			champ[i][x] = malloc(YMAX * sizeof(double));
 			for (int y = 0; y < YMAX; y++){
 				champ[i][x][y] = 0 ; 
@@ -41,7 +41,12 @@ onde new_onde(int longueur_onde){
 	return w; 
 }
 
+double sq(double x) {
+	return x*x; 
+}
 double laplacien(double ** champ, int x , int y) {
+	if (y==0) return (champ[x+1][y] + champ[x-1][y] + champ[x][y+1] + champ[x][YMAX-1] - 4.*champ[x][y])/(dl*dl);
+	if (y==YMAX-1) return (champ[x+1][y] + champ[x-1][y] + champ[x][0] + champ[x][y-1] - 4.*champ[x][y])/(dl*dl);
 	return (champ[x+1][y] + champ[x-1][y] + champ[x][y+1] + champ[x][y-1] - 4.*champ[x][y])/(dl*dl);
 }
 
@@ -53,21 +58,30 @@ double calc_c(double lambda, int x, int y){
 
 void init(){
 	//sera remplacé par un fichier à part avec différents préset plus tard si j'ai la foi 
-	for (int x = 0; x < XMAX; x++){
+	for (int x = 0; x < 2*XMAX; x++){
 		for (int y=0; y < YMAX; y++){
 			hauteur[x][y] = 0 ;
-			prof[x][y] = 5;		
+			prof[x][y] = 5 ;		
 		}
 	}	
 
 	ondes[0] = new_onde(1);
 }
 
+double coeffrot(int x){
+	if (x < 2*XMAX - 50){
+		return 0.; 
+	}	
+	return 30*exp(-1/(dl*(2*XMAX-x)));
+}
+
 void futur_onde(onde w, int x, int y) {
 	double c = calc_c(w.lambda, x, y);	
 	double lap = laplacien(w.champ[1], x, y) ;
 	
-	w.champ[2][x][y] = (dt*dt*c*c)*lap + 2.*w.champ[1][x][y]- w.champ[0][x][y] ; 
+	w.champ[2][x][y] = sq(dt*c)*lap 
+		             + 2.*w.champ[1][x][y]- w.champ[0][x][y] 
+					 - dt*coeffrot(x)*(w.champ[1][x][y] - w.champ[0][x][y]) ; 
 }
 
 void bords_onde(onde w, double t){
@@ -76,6 +90,7 @@ void bords_onde(onde w, double t){
 	for (int y = 0; y < YMAX; y++){
 		c = calc_c(w.lambda, 0, y);
 		w.champ[2][0][y] = sin(t*2.*pi*c/w.lambda); // pour l'instant amplitude de 1m //wtf pas du tout 1 m finalement 
+		printf("%lf", w.champ[2][0][y]);
 	}
 	
 }
@@ -90,8 +105,8 @@ void update_onde(onde w, double t){
 
 	//calcul du nouveau futur 
 	bords_onde(w,t);
-	for (int x = 1; x < XMAX - 1 ; x++){
-		for (int y = 1; y < YMAX - 1; y++){
+	for (int x = 1; x < 2*XMAX - 1 ; x++){
+		for (int y = 0; y < YMAX; y++){
 			futur_onde(w,x,y);
 		}
 	}
@@ -100,7 +115,7 @@ void update_onde(onde w, double t){
 void update_h(double t){
 	for (int i = 0; i < NONDES ; i++){
 		update_onde(ondes[i], t); 
-		for (int x = 0; x < XMAX ; x++){
+		for (int x = 0; x < 2*XMAX ; x++){
 			for (int y = 0 ; y < YMAX ; y ++ ){
 				hauteur[x][y] += ondes[i].champ[1][x][y] ;
 			}
