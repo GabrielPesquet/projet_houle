@@ -1,0 +1,25 @@
+import numpy as np 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+from matplotlib.animation import FuncAnimation 
+
+hdata= np.fromfile("data.bin", dtype=float, count=-1, sep="") 
+hdata = hdata.reshape(1000,200, 200)
+
+forme_grille = {'width_ratios': (0.9, 0.05), 'wspace': 0.2}
+fig, (ax, cbar_ax) = plt.subplots(1, 2, gridspec_kw= forme_grille, figsize= (12, 8))
+
+m = hdata.min()
+M = hdata.max()
+
+def updateheatmap(i):
+    ax.cla()
+    sns.heatmap(hdata[i,...], 
+                ax= ax, 
+                cbar= True, 
+                cbar_ax= cbar_ax, 
+                vmin=m,
+                vmax=M)
+
+anim = FuncAnimation(fig = fig, func = updateheatmap, frames = 500, interval = 10, blit = False)
+plt.show()
