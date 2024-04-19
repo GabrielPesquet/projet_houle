@@ -17,13 +17,13 @@ const double g = 9.81;
 const double pi = 3.141592 ;
 
 typedef struct Onde{
-	int lambda; 
+	double lambda; 
 	double *** champ; //trois dimensions temps (3) x (XMAX) y (YMAX)
 } onde ;
 
 onde ondes[NONDES] ;
 
-onde new_onde(int longueur_onde){
+onde new_onde(double longueur_onde){
 	double *** champ = malloc(3 * sizeof(double**) );
 	
 	for (int i = 0; i < 3; i++){	
@@ -36,7 +36,7 @@ onde new_onde(int longueur_onde){
 			}
 		}
 	}	
-
+	
 	onde w = {longueur_onde, champ}; 	
 	return w; 
 }
@@ -44,6 +44,7 @@ onde new_onde(int longueur_onde){
 double sq(double x) {
 	return x*x; 
 }
+
 double laplacien(double ** champ, int x , int y) {
 	if (y==0) return (champ[x+1][y] + champ[x-1][y] + champ[x][y+1] + champ[x][YMAX-1] - 4.*champ[x][y])/(dl*dl);
 	if (y==YMAX-1) return (champ[x+1][y] + champ[x-1][y] + champ[x][0] + champ[x][y-1] - 4.*champ[x][y])/(dl*dl);
@@ -60,12 +61,12 @@ void init(){
 	//sera remplacé par un fichier à part avec différents préset plus tard si j'ai la foi 
 	for (int x = 0; x < 2*XMAX; x++){
 		for (int y=0; y < YMAX; y++){
-			hauteur[x][y] = 0 ;
-			prof[x][y] = 5 ;		
+			hauteur[x][y] = 0;
+			prof[x][y] = sq((1 - (double) x/(2*XMAX)))*2 + sq((double) y/YMAX - 0.5)*4 + 4;
 		}
 	}	
 
-	ondes[0] = new_onde(1);
+	ondes[0] = new_onde(5.);
 }
 
 double coeffrot(int x){
@@ -90,7 +91,6 @@ void bords_onde(onde w, double t){
 	for (int y = 0; y < YMAX; y++){
 		c = calc_c(w.lambda, 0, y);
 		w.champ[2][0][y] = sin(t*2.*pi*c/w.lambda); // pour l'instant amplitude de 1m //wtf pas du tout 1 m finalement 
-		printf("%lf", w.champ[2][0][y]);
 	}
 	
 }
