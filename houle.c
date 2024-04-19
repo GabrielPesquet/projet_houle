@@ -1,6 +1,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <SDL2/SDL.h>
+#include <stdbool.h>
 
 #define XMAX 200 // 200 utilisés + 150 de sécurité + 50 d'amortissement pour être sûr et certain qu'il n'y a pas d'effets de bord 
 #define YMAX 200 
@@ -142,7 +144,17 @@ void savebin(FILE * fp){
 	}
 }
 
-int main(){
+void mapDoubleToColor(double value, int *red, int *green, int *blue) {
+    // Normalize the value between 0 and 1
+    double normalizedValue = (value + 1.) / 2.;
+	//if(value != 0.) {printf("%f \n", value);}
+    // Determine the color components based on the normalized value
+    *red = (int)(255 * (1 - normalizedValue));
+    *green = (int)(255 * normalizedValue);
+    *blue = 0; // You can adjust this based on your preference for the color scheme
+}
+
+/*int main(){
 	FILE * fp = fopen("data.bin", "wb");
 	double temps = 0; 
 
@@ -152,4 +164,88 @@ int main(){
 		savebin(fp);
 	}	
 	fclose(fp);
+}*/
+
+const int HEIGHT = XMAX;
+const int WIDTH = YMAX;
+
+// Function to display the water heights
+void displayWaterHeights(SDL_Renderer *renderer, double water[HEIGHT][WIDTH]) {
+    int i, j;
+    SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Set color to blue
+
+    // Draw each pixel with corresponding water height
+    for (i = 0; i < HEIGHT; i++) {
+        for (j = 0; j < WIDTH; j++) {
+            int waterHeight = water[i][j]; // Get water height at this pixel
+            SDL_Rect pixel = {j, i, 1, 1}; // Create a rectangle for the pixel
+			int red, green, blue;
+			mapDoubleToColor(waterHeight, &red, &green, &blue);
+            SDL_SetRenderDrawColor(renderer, red, green, blue, 255); // Set color based on water height
+            SDL_RenderFillRect(renderer, &pixel); // Fill the rectangle
+        }
+    }
+    SDL_RenderPresent(renderer); // Update the screen
+}
+
+int main() {
+    // Initialize SDL
+    SDL_Init(SDL_INIT_VIDEO);
+
+    // Create a window
+    SDL_Window *window = SDL_CreateWindow("Wave Simulation", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
+    if (!window) {
+        printf("Failed to create window: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    // Create a renderer
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer) {
+        printf("Failed to create renderer: %s\n", SDL_GetError());
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    // Initialize your array with water heights
+    //float water[HEIGHT][WIDTH] = {0}; // Initialize all heights to 0
+
+    // Update your wave simulation and store water heights in the array
+	init(); 
+	double temps = 0;
+
+    // Display the water heights
+    displayWaterHeights(renderer, hauteur);
+
+	bool quit = false;
+    // Main loop
+    SDL_Event event;
+    //while (SDL_WaitEvent(&event)) {
+    while( !quit )
+        {
+            //Handle events on queue
+            while( SDL_PollEvent( &event ) != 0 )
+            {
+                //User requests quit
+                if( event.type == SDL_QUIT )
+                {
+                    quit = true;
+                }
+            }
+        if (event.type == SDL_QUIT) {
+            break;
+        }
+		temps+=dt;
+		update_h(temps);
+		displayWaterHeights(renderer, hauteur);
+		//printf("HERE");
+	}
+
+    // Cleanup
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+    return 0;
 }

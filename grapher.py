@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns 
 from matplotlib.animation import FuncAnimation 
 from sys import setrecursionlimit
+import matplotlib
+matplotlib.use('TkAgg')
 
 setrecursionlimit(10000)
 

@@ -4,10 +4,10 @@ LDFLAGS=
 .PHONY= clean mrproper calc show run
 
 houle.o: houle.c
-	gcc $(CFLAGS) -c houle.c
+	gcc $(CFLAGS) -c houle.c -lSDL2 -lm
 
 houle: houle.o
-	gcc $(LDFLAGS) -o houle houle.o -lm
+	gcc $(LDFLAGS) -o houle houle.o -lm -lSDL2 -lm
 
 calc: houle
 	./houle
