@@ -62,7 +62,7 @@ void init(){
 	for (int x = 0; x < 2*XMAX; x++){
 		for (int y=0; y < YMAX; y++){
 			hauteur[x][y] = 0;
-			prof[x][y] = 10; 
+			prof[x][y] = 10 + (1-0.5 * (double) x/XMAX)*4 + sq((double) y/YMAX - 0.5)*4; 
 		}
 	}	
 

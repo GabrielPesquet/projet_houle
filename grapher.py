@@ -25,7 +25,7 @@ def updateheatmap(i):
                 yticklabels=20,
                 vmin=m,
                 vmax=M,
-                cmap="Blues",)
+                cmap="Blues_r",)
 
 anim = FuncAnimation(fig = fig, func = updateheatmap, frames = 500, interval = 10, blit = False)
 #anim.save("houle.mp4", fps= 10, dpi=200)
