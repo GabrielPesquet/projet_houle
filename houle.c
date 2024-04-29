@@ -2,13 +2,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define XMAXS 200 
+#define XMAXS 200
 #define XMAXR 205
 #define YMAX 200 
 #define TMAX 120.0 // nombre de secondes de la simulation dans le monde réel 
-#define NTIMES 4000.
+#define NTIMES 1000. 
 #define MODEPROF 1 // 1 si basse profondeur, 0 si haute profondeur 
 #define NONDES 1
+#define OUTPUT 1
 
 double prof[XMAXR][YMAX] ;
 double hauteur[XMAXR][YMAX] ; 
@@ -56,15 +57,15 @@ double laplacien(double ** champ, int x , int y) {
 
 double calc_c(double lambda, int x, int y){
 	// pour l'isntant seulement les deux modèles linéaires 
-	if (MODEPROF == 0) return  0.;
-	if (MODEPROF == 1) return sqrt(g*prof[x][y]);
+	// ATTENTTION : lambda peut varier, c'est la pulsation qui bouge pas
+	 return sqrt(g*prof[x][y]); 
 }
 
 void init(){
 	for (int x = 0; x < XMAXR; x++){
 		for (int y=0; y < YMAX; y++){
 			hauteur[x][y] = 0;
-			prof[x][y] = 10 + (1-0.5 * (double) x/XMAXR)*4 + sq((double) y/YMAX - 0.5)*4; 
+			prof[x][y] = 10 + (1-0.5 * (double) x/XMAXR)*4 + sq((double) y/YMAX - 0.5)*6; 
 		}
 	}	
 
@@ -79,7 +80,8 @@ double coeffrot(int x){
 	
 	return exp(-1/sq(0.04*(2*XMAX-x)));
 	*/
-
+	
+	
 	return 0;
 }
 
@@ -89,7 +91,7 @@ void futur_onde(onde w, int x, int y) {
 	
 	w.champ[2][x][y] = sq(dt*c)*lap 
 		             + 2.*w.champ[1][x][y]- w.champ[0][x][y] 
-					 - dt*coeffrot(x)*(w.champ[1][x][y] - w.champ[0][x][y]) ; 
+					 - dt*dt*coeffrot(x)*sq(w.champ[1][x][y] - w.champ[0][x][y]);
 }
 
 void bords_onde(onde w, double t){
@@ -100,8 +102,7 @@ void bords_onde(onde w, double t){
 	for (int y = 0; y < YMAX; y++){
 		c = calc_c(w.lambda, 0, y);
 		//w.champ[2][0][y] = exp(-sq(t/dt - 10)); 
-		w.champ[2][0][y] = sin(2*pi*t*c/w.lambda);  
-
+		w.champ[2][0][y] = sin(2*pi*t*c/w.lambda);  	
 	}
 
 	//bord bas 
@@ -135,7 +136,7 @@ void update_onde(onde w, double t){
 }
 
 void update_h(double t){
-	for (int x = 0; x < XMAXS ; x++){
+	for (int x = 0; x < XMAXR ; x++){
 		for (int y = 0; y < YMAX ; y++){
 			hauteur[x][y] = 0 ;
 		}
@@ -161,6 +162,16 @@ void savebin(FILE * fp){
 	}
 }
 
+void topython(){
+	for (int x = 0; x < XMAXS; x++){
+		for (int y = 0 ; y < YMAX; y++){
+			if (y) {printf(",");}
+			printf("%.2lf ", hauteur[x][y]);
+		}
+		printf("\n");
+	}
+}
+
 int main(){
 	FILE * fp = fopen("data.bin", "wb");
 	double temps = 0; 
@@ -168,7 +179,8 @@ int main(){
 	init(); 
 	for (int i = 0; i < NTIMES; i++, temps+= dt){
 		update_h(temps);
-		savebin(fp);
+		if (OUTPUT == 0) topython();
+		if (OUTPUT == 1) savebin(fp);
 	}	
 	fclose(fp);
 }

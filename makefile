@@ -15,7 +15,8 @@ calc: houle
 show: data.bin
 	python3 grapher.py 
 
-run : calc show
+run : houle 
+	./houle | python3 disp.py	
 
 clean:
 	rm -f *.o core
