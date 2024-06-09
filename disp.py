@@ -5,8 +5,8 @@ import itertools as it
 import time
 
 # Informations sur les images à lire (ici, 200x200 en flottants dans [-1.2, 1.2], séparés par des virgules)
-N_Lgn = 800
-N_Col = 200
+N_Lgn = 200
+N_Col = 800
 vmin = -1.2
 vmax = 1.2
 sep = ","

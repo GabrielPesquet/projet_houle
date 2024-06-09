@@ -9,7 +9,7 @@
 #define ELEV_NAME "elevation"
 
 // Gestion des erreurs NetCDF
-#define NC_CHECK(status) { if (status != NC_NOERR) { printf("Erreur NetCDF: %s\n", nc_strerror(status)); exit(1); } }
+#define NC_CHECK(status) { if (status != NC_NOERR) { fprintf(stderr,"Erreur NetCDF: %s\n", nc_strerror(status)); exit(1); } }
 
 float** get_elevations() {
     int ncid, lat_varid, lon_varid, elev_varid;
@@ -65,20 +65,20 @@ float** get_elevations() {
     }
 
     // Afficher quelques valeurs (pour vérifier)
-    printf("Latitudes: ");
+    fprintf(stderr,"Latitudes: ");
     for (size_t i = 0; i < 5; i++) {
-        printf("%f ", lat[i]);
+        fprintf(stderr,"%f ", lat[i]);
     }
-    printf("\nLongitudes: ");
+    fprintf(stderr,"\nLongitudes: ");
     for (size_t i = 0; i < 5; i++) {
-        printf("%f ", lon[i]);
+        fprintf(stderr,"%f ", lon[i]);
     }
-    printf("\nElevations: ");
+    fprintf(stderr,"\nElevations: ");
     for (size_t i = 0; i < 5; i++) {
         for (size_t j = 0; j < 5; j++) {
-            printf("%f ", elevation[i][j]);
+            fprintf(stderr,"%f ", elevation[i][j]);
         }
-        printf("\n");
+        fprintf(stderr,"\n");
     }
 
     // Fermer le fichier NetCDF
@@ -94,7 +94,7 @@ float** get_elevations() {
     }
 
     // Je crois que c'est la latitude puis la longitude
-    printf("Elevation shape : (%ld, %ld)", lat_len, lon_len);
+    fprintf(stderr,"Elevation shape : (%ld, %ld)", lat_len, lon_len);
     //free(elevation);
     return elevation;
 }
