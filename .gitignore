@@ -1,8 +1,9 @@
 *.o
 *.bin
 *.mp4
-"houle"
+houle
 "token"
-"built-together"
-"data-import"
+built-together
+data-import
+sortie.txt
 /.vscode

@@ -252,10 +252,10 @@ int main()
 		// fprintf(stderr, "✅ Here - main");
 		if (OUTPUT == 0)
 			topython();
-		fprintf(stderr, "✅ Here - to_python");
+		fprintf(stderr, "✅ Here - to_python\n");
 		if (OUTPUT == 1)
 			savebin(fp);
-		fprintf(stderr, "✅ Here - savebin");
+		fprintf(stderr, "✅ Here - savebin\n");
 	}
 	fclose(fp);
 }

@@ -1,13 +1,17 @@
 CFLAGS= -Wall -pedantic
 LDFLAGS= 
+NCFLAGS = $(shell nc-config --cflags --libs)
 
 .PHONY= clean mrproper calc show run
 
 houle.o: houle.c
-	gcc $(CFLAGS) -c houle.c
+	gcc $(CFLAGS) -c houle.c 
 
-houle: houle.o
-	gcc $(LDFLAGS) -o houle houle.o -lm
+data-import.o : data-import.c
+	gcc $(CFLAGS) -c data-import.c $(nc-config --cflags --libs)
+
+houle: houle.o data-import.o
+	gcc $(LDFLAGS) -o houle houle.o data-import.o -lm $(NCFLAGS)
 
 calc: houle
 	./houle
