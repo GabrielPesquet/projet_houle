@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define XMAXS 400 // Attention, x et y de matrices
-#define XMAXR 405
+#define XMAXS 500 // Attention, x et y de matrices
+#define XMAXR 505
 #define YMAX 500
 #define TMAX 120.0 // nombre de secondes de la simulation dans le monde réel
 #define NTIMES 1000
@@ -87,8 +87,8 @@ void init_cste(double cste)
 
 void init_plan_incline()
 {
-	double prof_min = 0.5; // A gauche (y=0)
-	double prof_max = 2.;  // A droite
+	double prof_min = 0.1; // A gauche (y=0)
+	double prof_max = 3.;  // A droite
 	int X_start = 1 * XMAXS / 3;
 	int X_end = XMAXS;
 	for (int x = X_start; x < X_end; x++)
@@ -162,7 +162,7 @@ double gaussian(double x, double mu, double sigma)
 void bords_onde_gauss(onde w, double t)
 {
 	double mu = YMAX / 2;
-	double sigma = YMAX * 0.1; // Pourquoi pas
+	double sigma = YMAX * 0.04; // Pourquoi pas
 	double c;
 	int x_gen = XMAXS / 6;
 	fprintf(stderr, "Au bord : %lf, ", gaussian(YMAX/6, mu, sigma));
