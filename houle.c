@@ -88,7 +88,7 @@ void init_cste(double cste)
 void init_plan_incline()
 {
 	double prof_min = 0.5; // A gauche (y=0)
-	double prof_max = 2.; // A droite
+	double prof_max = 2.;  // A droite
 	int X_start = 1 * XMAXS / 3;
 	int X_end = XMAXS;
 	for (int x = X_start; x < X_end; x++)
@@ -153,10 +153,33 @@ void bords_onde(onde w, double t)
 	}*/
 }
 
+double gaussian(double x, double mu, double sigma)
+{
+	// return 1 / (sigma * sqrt(2 * pi)) * exp(-0.5 * sq((x - mu) / sigma));
+	return exp(-0.5 * sq((x - mu) / sigma));
+}
+
+void bords_onde_gauss(onde w, double t)
+{
+	double mu = YMAX / 2;
+	double sigma = YMAX * 0.1; // Pourquoi pas
+	double c;
+	int x_gen = XMAXS / 6;
+	fprintf(stderr, "Au bord : %lf, ", gaussian(YMAX/6, mu, sigma));
+	fprintf(stderr, "au centre : %lf\n", gaussian(YMAX/2, mu, sigma));
+	for (int y = YMAX / 6; y < 5 * YMAX / 6; y++)
+	{
+		c = calc_c(w.lambda, x_gen, y);
+		double g_factor = gaussian(y, mu, sigma);
+		// g_factor = 1;
+		// w.champ[2][0][y] = exp(-sq(t/dt - 10));
+		w.champ[2][x_gen][y] = g_factor * sin(2 * pi * t * c / w.lambda);
+	}
+}
+
 void update_onde(onde w, double t)
 {
 	// avancement futur -> présent -> passé par swap de pointeurs
-	bords_onde(w, t);
 
 	double **temp;
 	temp = w.champ[0];
@@ -172,6 +195,8 @@ void update_onde(onde w, double t)
 			futur_onde(w, x, y);
 		}
 	}
+	// bords_onde(w, t);
+	bords_onde_gauss(w, t);
 }
 
 void update_h(double t)
