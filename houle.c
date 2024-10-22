@@ -6,14 +6,14 @@
 #define XMAXR 205
 #define YMAX 200 
 #define TMAX 120.0 // nombre de secondes de la simulation dans le monde réel 
-#define NTIMES 1000. 
+#define NTIMES 1000
 #define MODEPROF 1 // 1 si basse profondeur, 0 si haute profondeur 
 #define NONDES 1
-#define OUTPUT 1
+#define OUTPUT 0 // 0 -> topython, 1 -> savebin
 
 double prof[XMAXR][YMAX] ;
 double hauteur[XMAXR][YMAX] ; 
-const double dt = TMAX/NTIMES; //pas de temps arbitraire
+const double dt = TMAX/(double) NTIMES; //pas de temps arbitraire
 const double dl = 1; //correspond à la distance entre deux cases
 const double g = 9.81;
 const double pi = 3.141592 ;
@@ -65,7 +65,8 @@ void init(){
 	for (int x = 0; x < XMAXR; x++){
 		for (int y=0; y < YMAX; y++){
 			hauteur[x][y] = 0;
-			prof[x][y] = 10 + (1-0.5 * (double) x/XMAXR)*4 + sq((double) y/YMAX - 0.5)*6; 
+			prof[x][y] = 4; // ! A 4 ca dvg, pas à 3.........
+			//prof[x][y] = 10 + (1-0.5 * (double) x/XMAXR)*4 + sq((double) y/YMAX - 0.5)*6; 
 		}
 	}	
 
@@ -88,37 +89,41 @@ double coeffrot(int x){
 void futur_onde(onde w, int x, int y) {
 	double c = calc_c(w.lambda, x, y);	
 	double lap = laplacien(w.champ[1], x, y) ;
-	
+	// erreur (homogénéité) dans l'Overleaf ? p.12
+	// C'est quoi coeffrot ?
+	// Ah bah ça vaut 0...
 	w.champ[2][x][y] = sq(dt*c)*lap 
-		             + 2.*w.champ[1][x][y]- w.champ[0][x][y] 
-					 - dt*dt*coeffrot(x)*sq(w.champ[1][x][y] - w.champ[0][x][y]);
+		             + 2.*w.champ[1][x][y]- w.champ[0][x][y]; // - dt*dt*coeffrot(x)*sq(w.champ[1][x][y] - w.champ[0][x][y]);
 }
 
 void bords_onde(onde w, double t){
-	//doit être appelée après le calcl du futur du reste
+	//doit être appelée après le calcul du futur du reste
 
 	//bord haut pour l'instant un onde plane harmonique venant de x=0
 	double c;
-	for (int y = 0; y < YMAX; y++){
-		c = calc_c(w.lambda, 0, y);
+	int x_gen = XMAXS / 3;
+	for (int y = YMAX/3; y < 2*YMAX/3; y++){
+		c = calc_c(w.lambda, x_gen, y);
 		//w.champ[2][0][y] = exp(-sq(t/dt - 10)); 
-		w.champ[2][0][y] = sin(2*pi*t*c/w.lambda);  	
+		w.champ[2][x_gen][y] = sin(2*pi*t*c/w.lambda);  	
 	}
 
 	//bord bas 
-	double kappa ; //juste pour les calculs 
+	/*double kappa ; //juste pour les calculs 
 	for (int y = 0; y < YMAX; y++){
 		c = calc_c(w.lambda, 0, y);
 		kappa = c*dt/dl ; 
 		w.champ[2][XMAXR - 1][y] = w.champ[1][XMAXR- 2][y]
 								  + (w.champ[2][XMAXR - 2][y] - w.champ[1][XMAXR-1][y])*(kappa - 1)/(kappa + 1) ;
-	}
+	}*/
 
 	
 }
 
 void update_onde(onde w, double t){
 	//avancement futur -> présent -> passé par swap de pointeurs 
+	bords_onde(w,t);
+
 	double ** temp;
 	temp = w.champ[0] ;
 	w.champ[0] = w.champ[1] ;
@@ -132,7 +137,6 @@ void update_onde(onde w, double t){
 		}
 	}
 
-	bords_onde(w,t);
 }
 
 void update_h(double t){
@@ -146,7 +150,8 @@ void update_h(double t){
 		update_onde(ondes[i], t); 
 		for (int x = 0; x < XMAXR ; x++){
 			for (int y = 0 ; y < YMAX ; y ++ ){
-				hauteur[x][y] += ondes[i].champ[1][x][y] ;
+				//hauteur[x][y] += ondes[i].champ[1][x][y] ;
+				hauteur[x][y] = ondes[i].champ[1][x][y] ;
 			}
 		}
 	}

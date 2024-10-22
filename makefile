@@ -12,10 +12,10 @@ houle: houle.o
 calc: houle
 	./houle
 
-show: data.bin
+show:
 	python3 grapher.py 
 
-run : houle 
+run : houle
 	./houle | python3 disp.py	
 
 clean:

@@ -1,5 +1,6 @@
 *.o
 *.bin
 *.mp4
-"houle"
-"token"
+houle
+token
+.vscode
