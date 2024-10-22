@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define XMAXS 200 // Attention, x et y de matrices
-#define XMAXR 205
-#define YMAX 200
+#define XMAXS 400 // Attention, x et y de matrices
+#define XMAXR 405
+#define YMAX 500
 #define TMAX 120.0 // nombre de secondes de la simulation dans le monde réel
 #define NTIMES 1000
 #define MODEPROF 1 // 1 si basse profondeur, 0 si haute profondeur
@@ -87,9 +87,9 @@ void init_cste(double cste)
 
 void init_plan_incline()
 {
-	double prof_min = 1.; // A gauche (y=0)
-	double prof_max = 4.; // A droite
-	int X_start = 2 * XMAXS / 3;
+	double prof_min = 0.5; // A gauche (y=0)
+	double prof_max = 2.; // A droite
+	int X_start = 1 * XMAXS / 3;
 	int X_end = XMAXS;
 	for (int x = X_start; x < X_end; x++)
 	{
@@ -135,7 +135,7 @@ void bords_onde(onde w, double t)
 
 	// bord haut pour l'instant un onde plane harmonique venant de x=0
 	double c;
-	int x_gen = 0 / 6;
+	int x_gen = XMAXS / 6;
 	for (int y = YMAX / 3; y < 2 * YMAX / 3; y++)
 	{
 		c = calc_c(w.lambda, x_gen, y);
