@@ -5,8 +5,9 @@
 
 #define OUTPUT 0 // 0 -> topython, 1 -> savebin
 
-double prof[XMAXR][YMAX];
-double hauteur[XMAXR][YMAX];
+//cela vaudrait il le coup de rendre symétrique XMAX et YMAX (ie supprimer XMAXS ou créer YMAXS) ? 
+double prof[XMAX][YMAX];
+double hauteur[XMAX][YMAX];
 const double dt = TMAX / (double) NTIMES; // pas de temps de la simul  
 const double dl = 1;					 // correspond à la distance entre deux cases
 										 
@@ -18,8 +19,8 @@ onde new_onde(double longueur_onde)
 
 	for (int i = 0; i < 3; i++)
 	{
-		champ[i] = malloc(XMAXR * sizeof(double *));
-		for (int x = 0; x < XMAXR; x++)
+		champ[i] = malloc(XMAX * sizeof(double *));
+		for (int x = 0; x < XMAX; x++)
 		{
 			champ[i][x] = malloc(YMAX * sizeof(double));
 			for (int y = 0; y < YMAX; y++)
@@ -41,7 +42,7 @@ double sq(double x)
 double laplacien(double **champ, int x, int y)
 	// toujours calculé cylindrique suivant toutes les directions  
 {
-	return (champ[(x + 1) % XMAXR][y] + champ[(x + XMAXR - 1) % XMAXR][y]
+	return (champ[(x + 1) % XMAX][y] + champ[(x + XMAX - 1) % XMAX][y]
 		   	+ champ[x][(y + 1) % YMAX ] + champ[x][(y + YMAX - 1) % YMAX] - 4. * champ[x][y]) / (dl * dl);
 }
 
@@ -106,7 +107,7 @@ void update_onde(onde w, double t)
 	w.champ[2] = temp;
 
 	// calcul du nouveau futur
-	for (int x = 0; x < XMAXR; x++)
+	for (int x = 0; x < XMAX; x++)
 	{
 		for (int y = 0; y < YMAX; y++)
 		{
@@ -118,7 +119,7 @@ void update_onde(onde w, double t)
 
 void update_h(double t)
 {
-	for (int x = 0; x < XMAXR; x++)
+	for (int x = 0; x < XMAX; x++)
 	{
 		for (int y = 0; y < YMAX; y++)
 		{
@@ -129,7 +130,7 @@ void update_h(double t)
 	for (int i = 0; i < NONDES; i++)
 	{
 		update_onde(ondes[i], t);
-		for (int x = 0; x < XMAXR; x++)
+		for (int x = 0; x < XMAX; x++)
 		{
 			for (int y = 0; y < YMAX; y++)
 			{
@@ -147,7 +148,7 @@ void savebin(FILE *fp)
 {
 	for (int x = 0; x < XMAXS; x++)
 	{
-		for (int y = 0; y < YMAX; y++)
+		for (int y = 0; y < YMAXS; y++)
 		{
 			fwrite(&hauteur[x][y], sizeof(double), 1, fp);
 		}
@@ -158,7 +159,7 @@ void topython()
 {
 	for (int x = 0; x < XMAXS; x++)
 	{
-		for (int y = 0; y < YMAX; y++)
+		for (int y = 0; y < YMAXS; y++)
 		{
 			if (y)
 			{
