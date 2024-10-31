@@ -48,10 +48,11 @@ double laplacien(double **champ, int x, int y)
 
 double calc_c(double lambda, int x, int y)
 {
-	// pour l'instant seulement modèle basse profondeur 
 	// ATTENTTION : lambda peut varier, c'est la pulsation qui bouge pas
 	// Re ATTENTTION : jsp si c'est moi qui aimis ça, il faudrait revoir toute la manière dont sont traitées les ondes...
-	return sqrt(g * prof[x][y]);
+	
+	if (MODEPROF == 1) return sqrt(g * prof[x][y]);
+	else return sqrt(g*lambda/(2*pi)) ; 
 }
 
 /*
@@ -134,8 +135,8 @@ void update_h(double t)
 		{
 			for (int y = 0; y < YMAX; y++)
 			{
-				// hauteur[x][y] += ondes[i].champ[1][x][y] ;
-				hauteur[x][y] = ondes[i].champ[1][x][y];
+				hauteur[x][y] += ondes[i].champ[1][x][y] ;
+				//hauteur[x][y] = ondes[i].champ[1][x][y];
 			}
 		}
 	}
