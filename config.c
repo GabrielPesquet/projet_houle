@@ -2,13 +2,13 @@
 
 void init_cste(double cste)
 {
-	for (int x = 0; x < XMAXR; x++)
+	for (int x = 0; x < XMAX; x++)
 	{
 		for (int y = 0; y < YMAX; y++)
 		{
 			hauteur[x][y] = 0;
 			prof[x][y] = cste; // ! A 4 ca dvg, pas à 3.........
-							   // prof[x][y] = 10 + (1-0.5 * (double) x/XMAXR)*4 + sq((double) y/YMAX - 0.5)*6;
+							   // prof[x][y] = 10 + (1-0.5 * (double) x/XMAX)*4 + sq((double) y/YMAX - 0.5)*6;
 		}
 	}
 
@@ -18,10 +18,10 @@ void init_cste(double cste)
 
 void init_plan_incline()
 {
-	double prof_min = 0.5; // A gauche (y=0)
+	double prof_min = 0.1; // A gauche (y=0)
 	double prof_max = 4.;  // A droite
-	int X_start = 0; //1 * XMAXR / 3;
-	int X_end = XMAXR;
+	int X_start = 0; //1 * XMAX / 3;
+	int X_end = XMAX;
 	for (int x = X_start; x < X_end; x++)
 	{
 		for (int y = 0; y < YMAX; y++)
@@ -47,13 +47,13 @@ void limites(double t){
 
 void bords(onde w){
 	if (MODECIRC / 2 == 0){
-		for (int x = 0 ; x < XMAXR ; x++){
+		for (int x = 0 ; x < XMAX ; x++){
 			w.champ[2][x][0] = 0.  ; w.champ[2][x][YMAX - 1] = 0. ;
 		}
 	}
 	if (MODECIRC % 2 == 0) { //bords durs verticaux
 		for (int y = 0 ; y < YMAX ; y++){
-			w.champ[2][0][y] = 0. ; w.champ[2][XMAXR - 1][y] = 0. ; 
+			w.champ[2][0][y] = 0. ; w.champ[2][XMAX - 1][y] = 0. ; 
 		}
 	}
 }
@@ -72,7 +72,7 @@ void limites_onde_gauss(onde w, double t)
 		double g_factor = gaussian(y, mu, sigma);
 		// g_factor = 1;
 		// w.champ[2][0][y] = exp(-sq(t/dt - 10));
-		if (t < 6) {
+		if (t < 5 * w.lambda/c) {
 		w.champ[2][x_gen][y] = g_factor * sin(2 * pi * t * c / w.lambda);
 		}
 
