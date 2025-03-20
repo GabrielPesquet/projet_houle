@@ -8,8 +8,7 @@
 #define TMAX 120.0 // nombre de secondes de la simulation dans le monde réel
 #define NTIMES 1000
 #define MODEPROF 1 // 1 si basse profondeur, 0 si haute profondeur
-#define NONDES 1
-#define OUTPUT 0 // 0 -> topython, 1 -> savebin
+#define OUTPUT 0   // 0 -> topython, 1 -> savebin
 
 double prof[XMAXR][YMAX];
 double hauteur[XMAXR][YMAX];
@@ -20,13 +19,13 @@ const double pi = 3.141592;
 
 typedef struct Onde
 {
-	double lambda;
-	double ***champ; // trois dimensions temps (3) x (XMAX) y (YMAX)
+	double pulsation; // pulsation en rad / s
+	double ***champ;  // trois dimensions temps (3) x (XMAX) y (YMAX)
 } onde;
 
-onde ondes[NONDES];
+onde w;
 
-onde new_onde(double longueur_onde)
+onde new_onde(double pulsation)
 {
 	double ***champ = malloc(3 * sizeof(double **));
 
@@ -43,7 +42,7 @@ onde new_onde(double longueur_onde)
 		}
 	}
 
-	onde w = {longueur_onde, champ};
+	onde w = {pulsation, champ};
 	return w;
 }
 
@@ -63,13 +62,14 @@ double laplacien(double **champ, int x, int y)
 	return (champ[x + 1][y] + champ[x - 1][y] + champ[x][y + 1] + champ[x][y - 1] - 4. * champ[x][y]) / (dl * dl);
 }
 
-double calc_c(double lambda, int x, int y)
+double calc_c(onde w, int x, int y)
 {
 	// pour l'isntant seulement les deux modèles linéaires
 	// ATTENTTION : lambda peut varier, c'est la pulsation qui bouge pas
 	return sqrt(g * prof[x][y]);
 }
 
+// Does reset hauteur and set prof
 void init_cste(double cste)
 {
 	for (int x = 0; x < XMAXR; x++)
@@ -81,8 +81,6 @@ void init_cste(double cste)
 							   // prof[x][y] = 10 + (1-0.5 * (double) x/XMAXR)*4 + sq((double) y/YMAX - 0.5)*6;
 		}
 	}
-
-	ondes[0] = new_onde(50.);
 }
 
 void init_plan_incline()
@@ -121,7 +119,7 @@ double coeffrot(int x)
 
 void futur_onde(onde w, int x, int y)
 {
-	double c = calc_c(w.lambda, x, y);
+	double c = calc_c(w, x, y);
 	double lap = laplacien(w.champ[1], x, y);
 	// erreur (homogénéité) dans l'Overleaf ? p.12
 	// C'est quoi coeffrot ?
@@ -134,13 +132,11 @@ void bords_onde(onde w, double t)
 	// doit être appelée après le calcul du futur du reste
 
 	// bord haut pour l'instant un onde plane harmonique venant de x=0
-	double c;
 	int x_gen = XMAXS / 6;
 	for (int y = YMAX / 3; y < 2 * YMAX / 3; y++)
 	{
-		c = calc_c(w.lambda, x_gen, y);
 		// w.champ[2][0][y] = exp(-sq(t/dt - 10));
-		w.champ[2][x_gen][y] = sin(2 * pi * t * c / w.lambda);
+		w.champ[2][x_gen][y] = sin(w.pulsation * t);
 	}
 
 	// bord bas
@@ -163,20 +159,19 @@ void bords_onde_gauss(onde w, double t)
 {
 	double mu = YMAX / 2;
 	double sigma = YMAX * 0.04; // Pourquoi pas
-	double c;
 	int x_gen = XMAXS / 6;
-	fprintf(stderr, "Au bord : %lf, ", gaussian(YMAX/6, mu, sigma));
-	fprintf(stderr, "au centre : %lf\n", gaussian(YMAX/2, mu, sigma));
+	fprintf(stderr, "Au bord : %lf, ", gaussian(YMAX / 6, mu, sigma));
+	fprintf(stderr, "au centre : %lf\n", gaussian(YMAX / 2, mu, sigma));
 	for (int y = YMAX / 6; y < 5 * YMAX / 6; y++)
 	{
-		c = calc_c(w.lambda, x_gen, y);
 		double g_factor = gaussian(y, mu, sigma);
 		// g_factor = 1;
 		// w.champ[2][0][y] = exp(-sq(t/dt - 10));
-		w.champ[2][x_gen][y] = g_factor * sin(2 * pi * t * c / w.lambda);
+		w.champ[2][x_gen][y] = g_factor * sin(t * w.pulsation);
 	}
 }
 
+// Etape suivante avec une certaine fonction de bord
 void update_onde(onde w, double t)
 {
 	// avancement futur -> présent -> passé par swap de pointeurs
@@ -209,16 +204,13 @@ void update_h(double t)
 		}
 	}
 
-	for (int i = 0; i < NONDES; i++)
+	update_onde(w, t);
+	for (int x = 0; x < XMAXR; x++)
 	{
-		update_onde(ondes[i], t);
-		for (int x = 0; x < XMAXR; x++)
+		for (int y = 0; y < YMAX; y++)
 		{
-			for (int y = 0; y < YMAX; y++)
-			{
-				// hauteur[x][y] += ondes[i].champ[1][x][y] ;
-				hauteur[x][y] = ondes[i].champ[1][x][y];
-			}
+			// hauteur[x][y] += ondes[i].champ[1][x][y] ;
+			hauteur[x][y] = w.champ[1][x][y];
 		}
 	}
 
@@ -256,6 +248,7 @@ int main()
 {
 	FILE *fp = fopen("data.bin", "wb");
 	double temps = 0;
+	w = new_onde(1.); // Onde de pulsation 1s
 
 	init();
 	for (int i = 0; i < NTIMES; i++, temps += dt)
