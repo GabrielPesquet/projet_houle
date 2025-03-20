@@ -2,14 +2,16 @@
 #define CONFIG_H
 #include "houle.h" 
 
-#define XMAXS 500 // S pour shown
-#define XMAX 1000 // réel 
-#define YMAX 500
-#define YMAXS 500 
-#define TMAX 120.0 // nombre de secondes de la simulation dans le monde réel
-#define NTIMES 2000
+// je prends un rapport 1:10 par rapport aux mesures réelles
+//
+#define XMAXS 390 // S pour shown
+#define XMAX 390 // réel 
+#define YMAX 190 
+#define YMAXS 190 
+#define TMAX 1.0 // nombre de secondes de la simulation dans le monde réel
+#define NTIMES 5000 
 #define MODEPROF 1 // 1 si basse profondeur, 0 si haute profondeur
-#define MODECIRC 1
+#define MODECIRC 2 
 	// circmod : 0 pas de bord cylindrique 
 	// circmod = 1 bords cylindriques X = 0 = XMAX  
 	// circmod = 2 bords cylindriques Y = 0 = YMAXR 
@@ -27,5 +29,6 @@ void init_cste(double cste);
 void init_plan_incline() ; 
 void bords(onde w);
 void limites_onde_gauss(onde w, double t); 
+void limites_onde_sinus(onde w, double t); 
 double gaussian(double x, double mu, double sigma); 
 #endif

@@ -12,36 +12,37 @@ void init_cste(double cste)
 		}
 	}
 
-	ondes[0] = new_onde(50.);
+	ondes[0] = new_onde(0.05);
 }
 
 
 void init_plan_incline()
 {
-	double prof_min = 0.1; // A gauche (y=0)
-	double prof_max = 4.;  // A droite
-	int X_start = 0; //1 * XMAX / 3;
+	double prof_min = 0.; // A gauche (y=0)
+	double prof_max = 0.1;  // A droite
+	int X_start = 0; ///1 * XMAX / 3;
 	int X_end = XMAX;
 	for (int x = X_start; x < X_end; x++)
 	{
 		for (int y = 0; y < YMAX; y++)
 		{
-			prof[x][y] = prof_min + (prof_max - prof_min) * (double)y / (double)YMAX;
+			prof[XMAX-x-1][y] = prof_min + (prof_max - prof_min) * (double)y / (double) YMAX;
 		}
 	}
 }
 
 void init()
 {
-	init_cste(4.); // Partout hors du plan
-	init_plan_incline();
+	init_cste(0.1); // Partout hors du plan
+	//init_plan_incline();
 }
 
 
 void limites(double t){
 	for (int i = 0 ; i < NONDES ; i++){
 		bords(ondes[i]);
-		limites_onde_gauss(ondes[i], t); 
+		//limites_onde_gauss(ondes[i], t); 
+		limites_onde_sinus(ondes[i], t); 
 	}
 }
 
@@ -63,7 +64,7 @@ void limites_onde_gauss(onde w, double t)
 	double mu = (double) YMAX / 2;
 	double sigma = YMAX * 0.04; // Pourquoi pas. Re : Pourquoi pas en effet 
 	double c;
-	int x_gen = XMAXS / 6;
+	int x_gen = XMAXS / 6 + 400;
 	//fprintf(stderr, "Au bord : %lf, ", gaussian(YMAX/6, mu, sigma));
 	//fprintf(stderr, "au centre : %lf\n", gaussian(YMAX/2, mu, sigma));
 	for (int y = YMAX / 6; y < 5 * YMAX / 6; y++)
@@ -72,12 +73,21 @@ void limites_onde_gauss(onde w, double t)
 		double g_factor = gaussian(y, mu, sigma);
 		// g_factor = 1;
 		// w.champ[2][0][y] = exp(-sq(t/dt - 10));
-		if (t < 5 * w.lambda/c) {
-		w.champ[2][x_gen][y] = g_factor * sin(2 * pi * t * c / w.lambda);
+		if (t < w.lambda/c) {
+
+		w.champ[2][x_gen][y] = g_factor * cos(2 * pi * t * c / w.lambda);
 		}
 
 	}
 
+}
+
+void limites_onde_sinus(onde w, double t){
+	double c ; 
+	for (int y = 0; y < YMAX ; y++){
+		c = calc_c(w.lambda, 0, y); 
+		w.champ[2][0][y] = 0.1*cos(2 * pi * t * c / w.lambda) ; 
+	}
 }
 
 double gaussian(double x, double mu, double sigma)

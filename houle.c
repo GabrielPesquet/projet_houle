@@ -5,11 +5,10 @@
 
 #define OUTPUT 0 // 0 -> topython, 1 -> savebin
 
-//cela vaudrait il le coup de rendre symétrique XMAX et YMAX (ie supprimer XMAXS ou créer YMAXS) ? 
 double prof[XMAX][YMAX];
 double hauteur[XMAX][YMAX];
 const double dt = TMAX / (double) NTIMES; // pas de temps de la simul  
-const double dl = 1;					 // correspond à la distance entre deux cases
+const double dl = 0.001;					 // correspond à la distance entre deux cases
 										 
 onde ondes[NONDES]; // les ondes 
 
@@ -51,7 +50,10 @@ double calc_c(double lambda, int x, int y)
 	// ATTENTTION : lambda peut varier, c'est la pulsation qui bouge pas
 	// Re ATTENTTION : jsp si c'est moi qui aimis ça, il faudrait revoir toute la manière dont sont traitées les ondes...
 	
-	if (MODEPROF == 1) return sqrt(g * prof[x][y]);
+	if (MODEPROF == 1) {
+		//fprintf(stderr, "%lf \n", sqrt(g * prof[x][y])*dt/dl);
+		return sqrt(g * prof[x][y]);
+	}
 	else return sqrt(g*lambda/(2*pi)) ; 
 }
 
@@ -182,7 +184,7 @@ int main()
 	{
 		update_h(temps);
 		if (OUTPUT == 0)
-			if (i % 10 == 0) 
+			if (i % 5 == 0) 
 			topython();
 		if (OUTPUT == 1)
 			savebin(fp);
