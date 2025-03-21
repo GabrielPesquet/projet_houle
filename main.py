@@ -56,7 +56,7 @@ def init():
     hauteur.fill(0)
     prof.fill(HAUTEURDEAU)
     # Plan incliné
-    #prof[XMAX // 3 : XMAX, :] = np.linspace(0.1, HAUTEURDEAU * 0.2, YMAX)
+    prof[XMAX // 3 : XMAX, :] = np.linspace(0.1, HAUTEURDEAU * 0.2, YMAX)
 
 
 
@@ -98,6 +98,12 @@ def condition_bord_neumann(): # évite que le signal traverse par le bas
     champ[2, XMAX-1, :] = champ[2, XMAX-2, :]  # Bord droit
     champ[2, :, 0] = champ[2, :, 1]  # Bord bas
     champ[2, :, YMAX-1] = champ[2, :, YMAX-2]  # Bord haut
+
+def condition_bord_dirichlet(): # marche pas trop
+    champ[1, 0, :] = 0  # Bord gauche
+    champ[1, XMAX-1, :] = 0  # Bord droit
+    champ[1, :, 0] = 0  # Bord bas
+    champ[1, :, YMAX-1] = 0  # Bord haut
 
 def update_onde(t):
     global champ
