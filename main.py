@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 from time import sleep
+from mpl_toolkits.mplot3d import Axes3D
 
-XMAX = 200
-YMAX = 200
+XMAX = 400
+YMAX = 400
 TMAX = 10.0
 NTIMES = 1000
 OUTPUT = 0
@@ -29,14 +30,11 @@ def set_to_cuve(i):
     XMAX = int(cuves[i]["longueur"] / cuves[i]["largeur"] * YMAX)
     print(f"X : {XMAX}, Y:{YMAX}")
     HAUTEURDEAU = cuves[i]["hauteur_max"] * 2 / 30  # Arbitraire pour l'instant
-    dt = min(TMAX / NTIMES, dl / np.max(c))  # Condition CFL
+    #dt = min(TMAX / NTIMES, dl / np.max(c))  # Condition CFL
 
 
 
 
-prof = np.zeros((XMAX, YMAX))
-hauteur = np.zeros((XMAX, YMAX))
-champ = np.zeros((3, XMAX, YMAX))
 
 
 def laplacien(champ):
@@ -60,6 +58,13 @@ def init():
 
 
 
+
+#set_to_cuve(0)
+
+
+prof = np.zeros((XMAX, YMAX))
+hauteur = np.zeros((XMAX, YMAX))
+champ = np.zeros((3, XMAX, YMAX))
 
 init()
 c = calc_c(prof)
@@ -138,17 +143,24 @@ def UpdateState(frame):
     temps = dt * frame
     update_h(temps)
     state.set_data(hauteur)
+    ax2.clear()  # Clear previous frame
+    ax2.plot_surface(X[::1], Y[::1], hauteur[::1], cmap='viridis')
+    ax2.set_zlim(-.3, .3)
     print(f"{frame} -> {np.max(hauteur)}")
     return (state,)
 
 
 if __name__ == "__main__":
-    fig = plt.figure("Affichage", figsize=(7, 7))
+    fig = plt.figure("Affichage", figsize=(20, 10))
 
-    ax1 = fig.add_subplot(111)
+    ax1 = fig.add_subplot(121)
     state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax)
     ax1.set_xticks([])
     ax1.set_yticks([])
+
+    ax2 = fig.add_subplot(122, projection='3d')
+    X, Y = np.meshgrid(np.arange(XMAX), np.arange(YMAX))
+    surf3D = ax2.plot_surface(X[::1], Y[::1], hauteur[::1], cmap = 'viridis')
 
     anim = ani.FuncAnimation(
         fig,
