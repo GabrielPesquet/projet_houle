@@ -11,6 +11,7 @@ NTIMES = 1000
 OUTPUT = 0
 HAUTEURDEAU = .1
 dt = TMAX / NTIMES
+STEP = 4 # pas de downsampling dans l'affichage 3D
 dl = 0.02
 g = 9.81
 pulsation = 5.0
@@ -144,7 +145,8 @@ def UpdateState(frame):
     update_h(temps)
     state.set_data(hauteur)
     ax2.clear()  # Clear previous frame
-    ax2.plot_surface(X[::1], Y[::1], hauteur[::1], cmap='viridis')
+    ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
+    ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
     ax2.set_zlim(-.3, .3)
     print(f"{frame} -> {np.max(hauteur)}")
     return (state,)
@@ -160,7 +162,7 @@ if __name__ == "__main__":
 
     ax2 = fig.add_subplot(122, projection='3d')
     X, Y = np.meshgrid(np.arange(XMAX), np.arange(YMAX))
-    surf3D = ax2.plot_surface(X[::1], Y[::1], hauteur[::1], cmap = 'viridis')
+    surf3D = ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap = 'viridis')
 
     anim = ani.FuncAnimation(
         fig,
