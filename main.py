@@ -4,14 +4,14 @@ import matplotlib.animation as ani
 from time import sleep
 from mpl_toolkits.mplot3d import Axes3D
 
-XMAX = 400
+XMAX = 415
 YMAX = 400
 TMAX = 10.0
 NTIMES = 1000
 OUTPUT = 0
 HAUTEURDEAU = .1
 dt = TMAX / NTIMES
-STEP = 4 # pas de downsampling dans l'affichage 3D
+STEP = 1 # le pas de downsampling dans l'affichage 3D
 dl = 0.02
 g = 9.81
 pulsation = 5.0
@@ -55,17 +55,17 @@ def init():
     hauteur.fill(0)
     prof.fill(HAUTEURDEAU)
     # Plan incliné
-    prof[XMAX // 3 : XMAX, :] = np.linspace(0.1, HAUTEURDEAU * 0.2, YMAX)
+    prof[:, XMAX//3 : XMAX] = np.repeat(np.linspace(0.1, HAUTEURDEAU * 0.2, YMAX)[:, np.newaxis], XMAX - XMAX//3, axis=1)
 
 
 
 
-#set_to_cuve(0)
+# set_to_cuve(0)
 
 
-prof = np.zeros((XMAX, YMAX))
-hauteur = np.zeros((XMAX, YMAX))
-champ = np.zeros((3, XMAX, YMAX))
+prof = np.zeros((YMAX, XMAX))
+hauteur = np.zeros((YMAX, XMAX))
+champ = np.zeros((3, YMAX, XMAX))
 
 init()
 c = calc_c(prof)
@@ -95,15 +95,15 @@ def gaussian(x, mu, sigma):
 def bords_onde_gauss(t, amplitude):
     mu, sigma = YMAX / 2, YMAX * 0.04
     x_gen = XMAX // 6
-    champ[2, x_gen, YMAX // 6 : 5 * YMAX // 6] = gaussian(
+    champ[2, YMAX // 6 : 5 * YMAX // 6, x_gen] = gaussian(
         np.arange(YMAX // 6, 5 * YMAX // 6), mu, sigma
     ) * np.sin(t * pulsation) * amplitude
 
 def condition_bord_neumann(): # évite que le signal traverse par le bas
-    champ[2, 0, :] = champ[2, 1, :]  # Bord gauche
-    champ[2, XMAX-1, :] = champ[2, XMAX-2, :]  # Bord droit
-    champ[2, :, 0] = champ[2, :, 1]  # Bord bas
-    champ[2, :, YMAX-1] = champ[2, :, YMAX-2]  # Bord haut
+    champ[2, 0, :] = champ[2, 1, :]  # Bord bas
+    champ[2, YMAX-1, :] = champ[2, YMAX-2, :]  # Bord haut
+    champ[2, :, 0] = champ[2, :, 1]  # Bord gauche
+    champ[2, :, XMAX-1] = champ[2, :, XMAX-2]  # Bord droit
 
 def condition_bord_dirichlet(): # marche pas trop
     champ[1, 0, :] = 0  # Bord gauche
@@ -148,6 +148,7 @@ def UpdateState(frame):
     ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
     ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
     ax2.set_zlim(-.3, .3)
+    ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
     print(f"{frame} -> {np.max(hauteur)}")
     return (state,)
 
@@ -161,7 +162,10 @@ if __name__ == "__main__":
     ax1.set_yticks([])
 
     ax2 = fig.add_subplot(122, projection='3d')
-    X, Y = np.meshgrid(np.arange(XMAX), np.arange(YMAX))
+    X, Y = np.meshgrid(np.arange(XMAX), np.arange(YMAX)) # sus l'ordre des arguments... c'est mieux
+    print(np.shape(X))
+    print(np.shape(Y))
+    print(np.shape(hauteur))
     surf3D = ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap = 'viridis')
 
     anim = ani.FuncAnimation(
