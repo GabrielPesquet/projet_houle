@@ -4,12 +4,12 @@ import matplotlib.animation as ani
 from time import sleep
 from mpl_toolkits.mplot3d import Axes3D
 
-XMAX = 415
+XMAX = 600
 YMAX = 400
 TMAX = 10.0
 NTIMES = 1000
 OUTPUT = 0
-HAUTEURDEAU = .1
+HAUTEURDEAU = .2
 dt = TMAX / NTIMES
 STEP = 1 # le pas de downsampling dans l'affichage 3D
 dl = 0.02
@@ -35,7 +35,9 @@ def set_to_cuve(i):
 
 
 
-
+def does_deferle(i, j):
+    # Condition de déferlement la plus simple : 
+    return hauteur[i][j] > 1/7 * prof[i][j]
 
 
 def laplacien(champ):
@@ -55,8 +57,16 @@ def init():
     hauteur.fill(0)
     prof.fill(HAUTEURDEAU)
     # Plan incliné
-    prof[:, 0 : XMAX] = np.repeat(np.linspace(0.1, HAUTEURDEAU * 0.2, YMAX)[:, np.newaxis], XMAX, axis=1)
+    prof[:, 0 : XMAX] = np.repeat(np.linspace(HAUTEURDEAU, HAUTEURDEAU * 1, YMAX)[:, np.newaxis], XMAX, axis=1)
+    init_test_reflexion()
 
+def init_test_reflexion():
+    global prof
+    left = XMAX//2
+    right = left + XMAX//8
+    for x in range(left, right) :
+        for y in range(YMAX):
+            prof[y][x] = HAUTEURDEAU - (x-left)/(right-left) * HAUTEURDEAU * 0.8
 
 
 
@@ -66,6 +76,7 @@ def init():
 prof = np.zeros((YMAX, XMAX))
 hauteur = np.zeros((YMAX, XMAX))
 champ = np.zeros((3, YMAX, XMAX))
+points_de_deferlement = np.zeros((YMAX, XMAX))
 
 init()
 c = calc_c(prof)
@@ -144,13 +155,21 @@ def UpdateState(frame):
     temps = dt * frame
     update_h(temps)
     state.set_data(hauteur)
-    if frame%20==0 :
+    if frame%10 == 0 :
         ax2.clear()  # Clear previous frame
         ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
         ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
+        
+        ponts_deferl = [(y, x) for x in range(YMAX) for y in range(XMAX) if does_deferle(x, y)]
+        if ponts_deferl:
+            x_deferl, y_deferl = zip(*ponts_deferl)  # Décompacte en deux listes
+        else:
+            x_deferl, y_deferl = [], []
+        z_deferl = [prof[x_deferl[i]][y_deferl[i]] for i in range(len(x_deferl))]
+        ax2.scatter(x_deferl, y_deferl, z_deferl, color="red" )
         ax2.set_zlim(-.3, .3)
         ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
-    print(f"{frame} -> {np.max(hauteur)}")
+        print(f"{frame} -> {np.max(hauteur)}")
     return (state,)
 
 
