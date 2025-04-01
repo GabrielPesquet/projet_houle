@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define XMAXS 500 // Attention, x et y de matrices
 #define XMAXR 505
@@ -9,7 +10,9 @@
 #define NTIMES 1000
 #define MODEPROF 1 // 1 si basse profondeur, 0 si haute profondeur
 #define NONDES 1
-#define OUTPUT 0 // 0 -> topython, 1 -> savebin
+// #define OUTPUT 0 // 0 -> topython, 1 -> savebin
+
+int OUTPUT = 0; // lecture dans main pour le savebin
 
 double prof[XMAXR][YMAX];
 double hauteur[XMAXR][YMAX];
@@ -102,7 +105,7 @@ void init_plan_incline()
 
 void init()
 {
-	init_cste(2.); // Partout hors du plan
+	init_cste(2); // Partout hors du plan
 	init_plan_incline();
 }
 
@@ -164,9 +167,9 @@ void bords_onde_gauss(onde w, double t)
 	double mu = YMAX / 2;
 	double sigma = YMAX * 0.04; // Pourquoi pas
 	double c;
-	int x_gen = XMAXS / 6;
-	fprintf(stderr, "Au bord : %lf, ", gaussian(YMAX/6, mu, sigma));
-	fprintf(stderr, "au centre : %lf\n", gaussian(YMAX/2, mu, sigma));
+	int x_gen = 2 * XMAXS / 6;
+	fprintf(stderr, "Au bord : %lf, ", gaussian(YMAX / 6, mu, sigma));
+	fprintf(stderr, "au centre : %lf\n", gaussian(YMAX / 2, mu, sigma));
 	for (int y = YMAX / 6; y < 5 * YMAX / 6; y++)
 	{
 		c = calc_c(w.lambda, x_gen, y);
@@ -177,6 +180,15 @@ void bords_onde_gauss(onde w, double t)
 	}
 }
 
+void check_courant(onde w)
+{
+	int x_mesure = XMAXS / 2;
+	int y_mesure = YMAX / 2;
+	double c = calc_c(w.lambda, x_mesure, y_mesure);
+	double C_0 = c * dt / dl; // Nombre de Courant, doit être plus petit que 1 pour stabilité numérique
+
+	fprintf(stderr, "❗ C_0 : %lf\n", C_0);
+}
 void update_onde(onde w, double t)
 {
 	// avancement futur -> présent -> passé par swap de pointeurs
@@ -197,6 +209,7 @@ void update_onde(onde w, double t)
 	}
 	// bords_onde(w, t);
 	bords_onde_gauss(w, t);
+	check_courant(w);
 }
 
 void update_h(double t)
@@ -252,8 +265,12 @@ void topython()
 	}
 }
 
-int main()
+int main(int argc, char** argv)
 {
+	if(argc > 1 && strcmp("savebin", argv[1]) == 0){
+		OUTPUT = 1;
+	}
+
 	FILE *fp = fopen("data.bin", "wb");
 	double temps = 0;
 

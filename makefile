@@ -10,7 +10,7 @@ houle: houle.o
 	gcc $(LDFLAGS) -o houle houle.o -lm
 
 calc: houle
-	./houle
+	./houle savebin
 
 show:
 	python3 grapher.py 
