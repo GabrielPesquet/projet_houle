@@ -62,11 +62,11 @@ def init():
 
 def init_test_reflexion():
     global prof
-    left = XMAX//2
-    right = left + XMAX//8
+    left = 3 * XMAX//4
+    right = left + XMAX//16
     for x in range(left, right) :
         for y in range(YMAX):
-            prof[y][x] = HAUTEURDEAU - (x-left)/(right-left) * HAUTEURDEAU * 0.8
+            prof[y][x] = HAUTEURDEAU - (x-left)/(right-left) * HAUTEURDEAU * 1
 
 
 
@@ -105,7 +105,7 @@ def gaussian(x, mu, sigma):
 
 def bords_onde_gauss(t, amplitude):
     mu, sigma = YMAX / 2, YMAX * 0.04
-    x_gen = XMAX // 6
+    x_gen = 1
     champ[2, YMAX // 6 : 5 * YMAX // 6, x_gen] = gaussian(
         np.arange(YMAX // 6, 5 * YMAX // 6), mu, sigma
     ) * np.sin(t * pulsation) * amplitude
@@ -128,7 +128,7 @@ def update_onde(t):
     #print(dt, dl/np.max(c))
     champ = np.roll(champ, shift=-1, axis=0)
     futur_onde()
-    bords_onde_gauss(t, HAUTEURDEAU / 5)
+    bords_onde_gauss(t, HAUTEURDEAU / 10) # A /7 on aurait un déferlement à la source...
     condition_bord_neumann()
 
 
@@ -144,9 +144,8 @@ def savebin(filename):
         hauteur[:XMAX, :].tofile(f)
 
 
-vmin = -HAUTEURDEAU/3
-vmax = HAUTEURDEAU/3
-sep = ","
+vmin = -HAUTEURDEAU/5
+vmax = HAUTEURDEAU/5
 cmap = "viridis"  # Coloration, voir https://matplotlib.org/stable/users/explain/colors/colormaps.html
 
 
@@ -165,7 +164,7 @@ def UpdateState(frame):
             x_deferl, y_deferl = zip(*ponts_deferl)  # Décompacte en deux listes
         else:
             x_deferl, y_deferl = [], []
-        z_deferl = [prof[x_deferl[i]][y_deferl[i]] for i in range(len(x_deferl))]
+        z_deferl = [prof[y_deferl[i]][x_deferl[i]] for i in range(len(x_deferl))]
         ax2.scatter(x_deferl, y_deferl, z_deferl, color="red" )
         ax2.set_zlim(-.3, .3)
         ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
