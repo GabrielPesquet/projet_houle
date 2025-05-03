@@ -4,8 +4,10 @@
 #include "config.h" 
 
 #define OUTPUT 0 // 0 -> topython, 1 -> savebin
+#define LAP    3 // 2 -> méthode naive d'o 2 
+				 // 3 -> méthode d'o 2
+				 // 4 -> méthode naive d'o 4
 
-//cela vaudrait il le coup de rendre symétrique XMAX et YMAX (ie supprimer XMAXS ou créer YMAXS) ? 
 double prof[XMAX][YMAX];
 double hauteur[XMAX][YMAX];
 const double dt = TMAX / (double) NTIMES; // pas de temps de la simul  
@@ -42,8 +44,22 @@ double sq(double x)
 double laplacien(double **champ, int x, int y)
 	// toujours calculé cylindrique suivant toutes les directions  
 {
-	return (champ[(x + 1) % XMAX][y] + champ[(x + XMAX - 1) % XMAX][y]
-		   	+ champ[x][(y + 1) % YMAX ] + champ[x][(y + YMAX - 1) % YMAX] - 4. * champ[x][y]) / (dl * dl);
+	if (LAP == 2){
+	return (champ[(x + 1) % XMAX][y] + champ[(x + XMAX - 1) % XMAX][y] + champ[x][(y + 1) % YMAX ] + champ[x][(y + YMAX - 1) % YMAX] 
+			- 4. * champ[x][y]) / (dl * dl);
+	}	
+
+	if (LAP == 3){
+	return (+0.5*(champ[(x + 1) % XMAX][(y + YMAX - 1) % YMAX] + champ[(x + XMAX - 1) % XMAX][(y + 1) % YMAX] + champ[(x+1)%XMAX][(y + 1) % YMAX ] + champ[(x + XMAX -1)%XMAX][(y + YMAX - 1) % YMAX])
+		   +0.5*(champ[(x + 1) % XMAX][y] + champ[(x + XMAX - 1) % XMAX][y] + champ[x][(y + 1) % YMAX ] + champ[x][(y + YMAX - 1) % YMAX])
+		   -4.*champ[x][y]) / (dl * dl);
+	}
+
+	if (LAP == 4){
+	return (-0.0833*(champ[(x + 2) % XMAX][y] + champ[(x + XMAX - 2) % XMAX][y] + champ[x][(y + 2) % YMAX ] + champ[x][(y + YMAX - 2) % YMAX])
+		   +1.3333*(champ[(x + 1) % XMAX][y] + champ[(x + XMAX - 1) % XMAX][y] + champ[x][(y + 1) % YMAX ] + champ[x][(y + YMAX - 1) % YMAX])
+		   -5.*champ[x][y]) / (dl * dl);
+	}
 }
 
 double calc_c(double lambda, int x, int y)
@@ -51,7 +67,10 @@ double calc_c(double lambda, int x, int y)
 	// ATTENTTION : lambda peut varier, c'est la pulsation qui bouge pas
 	// Re ATTENTTION : jsp si c'est moi qui aimis ça, il faudrait revoir toute la manière dont sont traitées les ondes...
 	
-	if (MODEPROF == 1) return sqrt(g * prof[x][y]);
+	if (MODEPROF == 1) {
+		//fprintf(stderr, "%lf \n", sqrt(g * prof[x][y])*dt/dl);
+		return sqrt(g * prof[x][y]);
+	}
 	else return sqrt(g*lambda/(2*pi)) ; 
 }
 
@@ -181,10 +200,10 @@ int main()
 	for (int i = 0; i < NTIMES; i++, temps += dt)
 	{
 		update_h(temps);
-		if (OUTPUT == 0)
-			if (i % 10 == 0) 
+		if (OUTPUT % 2 == 0)
+			if (i % 5 == 0) 
 			topython();
-		if (OUTPUT == 1)
+		if (OUTPUT/2 == 1)
 			savebin(fp);
 	}
 	fclose(fp);
