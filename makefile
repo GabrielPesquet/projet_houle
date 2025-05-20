@@ -12,13 +12,13 @@ config.o: config.h config.c
 houle: houle.o config.o
 	gcc $(LDFLAGS) -o houle houle.o config.o -lm
 
-calc: houle
+calc: mrproper houle
 	./houle
 
 show:
 	python3 grapher.py 
 
-run : houle
+run : mrproper houle
 	./houle | python3 disp.py	
 
 clean:

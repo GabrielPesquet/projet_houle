@@ -12,23 +12,32 @@ void init_cste(double cste)
 		}
 	}
 
-	ondes[0] = new_onde(50.);
+	ondes[0] = new_onde(80.);
 }
 
 
 void init_plan_incline()
 {
 	double prof_min = 0.1; // A gauche (y=0)
-	double prof_max = 4.;  // A droite
-	int X_start = 0; //1 * XMAX / 3;
-	int X_end = XMAX;
-	for (int x = X_start; x < X_end; x++)
+	double prof_max = 3.;  // A droite
+	int Y_start = 0; //1 * XMAX / 3;
+	int Y_end = YMAXS;
+	for (int x = 0; x < XMAX; x++)
 	{
-		for (int y = 0; y < YMAX; y++)
+		for (int y = 0; y < Y_start; y++){
+			prof[x][y] = prof_min ; 
+		}
+
+		for (int y = Y_start; y < Y_end; y++)
 		{
-			prof[x][y] = prof_min + (prof_max - prof_min) * (double)y / (double)YMAX;
+			prof[x][y] = prof_min + (prof_max - prof_min) * (double)(y-Y_start) / (double)Y_end;
+		}
+
+		for(int y = Y_end ; y < YMAX ; y++){
+			prof[x][y] = prof_max ;
 		}
 	}
+
 }
 
 void init()
@@ -60,10 +69,10 @@ void bords(onde w){
 
 void limites_onde_gauss(onde w, double t)
 {
-	double mu = (double) YMAX / 2;
-	double sigma = YMAX * 0.04; // Pourquoi pas. Re : Pourquoi pas en effet 
+	double mu = (double) 250.;
+	double sigma = 20.; // Pourquoi pas. Re : Pourquoi pas en effet 
 	double c;
-	int x_gen = XMAXS / 6;
+	int x_gen = 3;
 	//fprintf(stderr, "Au bord : %lf, ", gaussian(YMAX/6, mu, sigma));
 	//fprintf(stderr, "au centre : %lf\n", gaussian(YMAX/2, mu, sigma));
 	for (int y = YMAX / 6; y < 5 * YMAX / 6; y++)
@@ -72,8 +81,12 @@ void limites_onde_gauss(onde w, double t)
 		double g_factor = gaussian(y, mu, sigma);
 		// g_factor = 1;
 		// w.champ[2][0][y] = exp(-sq(t/dt - 10));
-		if (t < 5 * w.lambda/c) {
-		w.champ[2][x_gen][y] = g_factor * sin(2 * pi * t * c / w.lambda);
+		if (t < 0.7*w.lambda/c) {
+			for (int  x = x_gen - 3; x <= x_gen + 3; x++){
+				w.champ[0][x][y] = g_factor * sin(2 * pi * (t-dt) * c / w.lambda);
+				w.champ[1][x][y] = g_factor * sin(2 * pi * t * c / w.lambda);
+				w.champ[2][x][y] = g_factor * sin(2 * pi * (t + dt) * c / w.lambda);
+			}
 		}
 
 	}

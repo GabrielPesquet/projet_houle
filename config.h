@@ -4,12 +4,12 @@
 
 #define XMAXS 500 // S pour shown
 #define XMAX 1000 // réel 
-#define YMAX 500
+#define YMAX 1000
 #define YMAXS 500 
-#define TMAX 120.0 // nombre de secondes de la simulation dans le monde réel
-#define NTIMES 2000
+#define TMAX 200.0 // nombre de secondes de la simulation dans le monde réel
+#define NTIMES 5000 
 #define MODEPROF 1 // 1 si basse profondeur, 0 si haute profondeur
-#define MODECIRC 1
+#define MODECIRC 3
 	// circmod : 0 pas de bord cylindrique 
 	// circmod = 1 bords cylindriques X = 0 = XMAX  
 	// circmod = 2 bords cylindriques Y = 0 = YMAXR 
