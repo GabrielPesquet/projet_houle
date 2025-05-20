@@ -156,14 +156,33 @@ def parcoursmax(deb, fin, lissage=5):
 
     plt.show()
 
+def sismograph(X, Y, tdeb, tfin): 
+    fig = plt.figure(figsize=(7, 7))
+    ax = fig.add_subplot() 
+   
+    dt = 1 
+
+    #ax.set_xticks([k*0.2 for k in range(0, 5)])
+    #ax.set_yticks([t*dt for t in range(tdeb, tfin, 250)])
+
+    T = np.linspace(tdeb*dt, tfin*dt, tfin-tdeb)
+    for i in range(len(X)) : 
+        ax.plot(T, hdata[tdeb:tfin,X[i], Y[i]])
+    
+    plt.show()
+
+
 #vue3d(30)
 
 if __name__ == "__main__" :
     #videoplan()
+    """
     vue3d(100) 
     vue3d(500) 
     vue3d(1000) 
     vue3d(1500) 
     vue3d(2500) 
     vue3d(3000) 
+    """
 
+    sismograph([200, 300, 400], [200, 300, 400], 1000, 3000)
