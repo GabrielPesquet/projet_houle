@@ -55,7 +55,9 @@ def init():
     hauteur.fill(0)
     prof.fill(HAUTEURDEAU)
     # Plan incliné
-    prof[:, 0 : XMAX] = np.repeat(np.linspace(0.1, HAUTEURDEAU * 0.2, YMAX)[:, np.newaxis], XMAX, axis=1)
+    prof[:, 0 : XMAX] = np.repeat(np.linspace(HAUTEURDEAU, HAUTEURDEAU * 1, YMAX)[:, np.newaxis], XMAX, axis=1)
+    #prof[:, 0 : XMAX] = np.repeat(np.linspace(0.1, HAUTEURDEAU * 0.2, YMAX)[:, np.newaxis], XMAX , axis=1) # SETUP image diapo 13
+    prof[:, 0 : XMAX - 10] = np.repeat(np.linspace(0.1, HAUTEURDEAU * 0.2, YMAX)[:, np.newaxis], XMAX - 10, axis=1)
 
 
 
@@ -141,12 +143,17 @@ cmap = "viridis"  # Coloration, voir https://matplotlib.org/stable/users/explain
 
 def UpdateState(frame):
     #sleep(0.0)
+    if(frame > 0):
+        return ()
     temps = dt * frame
     update_h(temps)
     state.set_data(hauteur)
     if frame%20==0 :
         ax2.clear()  # Clear previous frame
-        ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
+        ax2.set_xlabel("Axe x")
+        ax2.set_ylabel("Axe -z")
+        ax2.set_zlabel("Axe y")
+        ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.3)
         ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
         ax2.set_zlim(-.3, .3)
         ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
@@ -154,20 +161,24 @@ def UpdateState(frame):
     return (state,)
 
 
+
 if __name__ == "__main__":
     fig = plt.figure("Affichage", figsize=(20, 10))
 
     ax1 = fig.add_subplot(121)
     state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax)
-    ax1.set_xticks([])
-    ax1.set_yticks([])
+    # ax1.set_xticks([])
+    # ax1.set_yticks([])
+    ax1.set_xlabel(f"Abscisse entre 0 et {dl*XMAX}m")
+    ax1.set_ylabel(f"Ordonnée entre 0 et {dl*YMAX}m")
 
     ax2 = fig.add_subplot(122, projection='3d')
     X, Y = np.meshgrid(np.arange(XMAX), np.arange(YMAX)) # sus l'ordre des arguments... c'est mieux
     print(np.shape(X))
     print(np.shape(Y))
-    print(np.shape(hauteur))
     surf3D = ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap = 'viridis')
+    
+    print(np.shape(hauteur))
 
     anim = ani.FuncAnimation(
         fig,
@@ -181,3 +192,4 @@ if __name__ == "__main__":
 
     plt.show()
     print(f"Max : {np.max(hauteur)}")
+

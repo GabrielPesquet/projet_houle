@@ -35,9 +35,9 @@ def set_to_cuve(i):
 
 
 
-def does_deferle(i, j):
+def does_deferle(x, y):
     # Condition de déferlement la plus simple : 
-    return hauteur[i][j] > 1/7 * prof[i][j]
+    return hauteur[y][x] > 1/7 * prof[y][x]
 
 
 def laplacien(champ):
@@ -58,7 +58,7 @@ def init():
     prof.fill(HAUTEURDEAU)
     # Plan incliné
     prof[:, 0 : XMAX] = np.repeat(np.linspace(HAUTEURDEAU, HAUTEURDEAU * 1, YMAX)[:, np.newaxis], XMAX, axis=1)
-    init_test_reflexion()
+    init_test_submerged_breakwater()
 
 def init_test_reflexion():
     global prof
@@ -68,7 +68,14 @@ def init_test_reflexion():
         for y in range(YMAX):
             prof[y][x] = HAUTEURDEAU - (x-left)/(right-left) * HAUTEURDEAU * 1
 
-
+def init_test_submerged_breakwater():
+    global prof
+    left = 2 * XMAX//4
+    right = left + XMAX//5
+    mid = (left+right)/2
+    for x in range(left, right) :
+        for y in range(YMAX):
+            prof[y][x] = HAUTEURDEAU - (x-left)*(x-right)/((mid-left)*(mid-right)) * HAUTEURDEAU * 0.8
 
 # set_to_cuve(0)
 
@@ -128,7 +135,7 @@ def update_onde(t):
     #print(dt, dl/np.max(c))
     champ = np.roll(champ, shift=-1, axis=0)
     futur_onde()
-    bords_onde_gauss(t, HAUTEURDEAU / 10) # A /7 on aurait un déferlement à la source...
+    bords_onde_gauss(t, HAUTEURDEAU / 3) # A /7 on aurait un déferlement à la source...
     condition_bord_neumann()
 
 
@@ -154,18 +161,19 @@ def UpdateState(frame):
     temps = dt * frame
     update_h(temps)
     state.set_data(hauteur)
-    if frame%10 == 0 :
+    if frame%20 == 0 :
         ax2.clear()  # Clear previous frame
         ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
-        ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
+        ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey', alpha = 0.6)
         
-        ponts_deferl = [(y, x) for x in range(YMAX) for y in range(XMAX) if does_deferle(x, y)]
+        ponts_deferl = [(x, y) for x in range(XMAX) for y in range(YMAX) if does_deferle(x, y)]
         if ponts_deferl:
             x_deferl, y_deferl = zip(*ponts_deferl)  # Décompacte en deux listes
         else:
             x_deferl, y_deferl = [], []
-        z_deferl = [prof[y_deferl[i]][x_deferl[i]] for i in range(len(x_deferl))]
-        ax2.scatter(x_deferl, y_deferl, z_deferl, color="red" )
+        z_deferl = np.array([hauteur[y_deferl[i]][x_deferl[i]] for i in range(len(x_deferl))])
+        print(f"Nb déferl : {len(z_deferl)}")
+        ax2.scatter(x_deferl, y_deferl, z_deferl, color="black" )
         ax2.set_zlim(-.3, .3)
         ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
         print(f"{frame} -> {np.max(hauteur)}")
@@ -176,9 +184,11 @@ if __name__ == "__main__":
     fig = plt.figure("Affichage", figsize=(20, 10))
 
     ax1 = fig.add_subplot(121)
-    state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax)
-    ax1.set_xticks([])
-    ax1.set_yticks([])
+    state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax, alpha = 0.8)
+    # ax1.set_xticks([])
+    # ax1.set_yticks([])
+    ax1.set_xlabel(f"Abscisse entre 0 et {dl*XMAX}m")
+    ax1.set_ylabel(f"Ordonnée entre 0 et {dl*YMAX}m")
 
     ax2 = fig.add_subplot(122, projection='3d')
     X, Y = np.meshgrid(np.arange(XMAX), np.arange(YMAX)) # sus l'ordre des arguments... c'est mieux

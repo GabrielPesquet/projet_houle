@@ -21,13 +21,13 @@ elevation = dataset.variables['elevation'][:]
 print(lat.shape, lon.shape, elevation.shape)
 
 # Tracer un graphique simple de la bathymétrie
-"""plt.figure(figsize=(10, 6))
+plt.figure(figsize=(10, 6))
 plt.contourf(lon, lat, elevation, cmap='viridis')
 plt.colorbar(label='Profondeur (m)')
 plt.xlabel('Longitude')
 plt.ylabel('Latitude')
 plt.title('Bathymétrie')
-plt.show()"""
+plt.show()
 
 # Fermer le dataset
 dataset.close()
@@ -38,15 +38,21 @@ longitude_range = max(lon) - min(lon)
 
 XMAX = 1247 # longitude
 YMAX = 741
-TMAX = 1000.0
-NTIMES = 10000
+TMAX = 10000.0
+NTIMES = 100000
 OUTPUT = 0
-HAUTEURDEAU = .2
+HAUTEURDEAU = .2 # sensé être inutilisé ici
+AMPL = 2. # houle de 2m
 dt = TMAX / NTIMES
 STEP = 1 # le pas de downsampling dans l'affichage 3D
 dl = 2
 g = 9.81
 pulsation = 2*np.pi/10 # houle avec période de T = 10s
+
+longitude_moyenne = 48 * np.pi / 180 # à la louche
+dl = longitude_range / XMAX * np.cos(longitude_moyenne) * 111.32 * 1000 # cf formule
+print(f"dl : {dl}")
+
 
 
 cuves = [
@@ -91,18 +97,10 @@ def calc_c(prof):
 def init():
     global prof, hauteur
     hauteur.fill(0)
-    prof.fill(HAUTEURDEAU)
+    prof.fill(0)
     # Plan incliné
-    prof[:, 0 : XMAX] = np.repeat(np.linspace(HAUTEURDEAU, HAUTEURDEAU * 1, YMAX)[:, np.newaxis], XMAX, axis=1)
     init_brest()
 
-def init_test_reflexion():
-    global prof
-    left = 3 * XMAX//4
-    right = left + XMAX//16
-    for x in range(left, right) :
-        for y in range(YMAX):
-            prof[y][x] = HAUTEURDEAU - (x-left)/(right-left) * HAUTEURDEAU * 1
 
 def init_brest():
     global prof
@@ -132,10 +130,14 @@ dt = min(TMAX / NTIMES, dl / np.max(c) * 0.6) # nombre de courant minimal qu'on 
 
 
 
-
+def calc_H_sur_lambd(): 
+    H = prof
+    T = 2*np.pi / pulsation
+    lambd = T * c
+    return H / lambd
 
 def calcul_courant(x, y):
-    c = calc_c(x, y)
+    c = calc_c(x, y) # probablement pas nécessaire
     nombre_de_courant = c*dt/dl
     print(f"Courant : {nombre_de_courant}")
 
@@ -149,7 +151,7 @@ def gaussian(x, mu, sigma):
 
 
 def bords_onde_gauss(t, amplitude):
-    mu, sigma = YMAX / 2, YMAX * 0.04
+    mu, sigma = YMAX / 2, YMAX * 0.4 # On élargit beaucoup pour Brest !
     x_gen = 1
     champ[2, YMAX // 6 : 5 * YMAX // 6, x_gen] = gaussian(
         np.arange(YMAX // 6, 5 * YMAX // 6), mu, sigma
@@ -175,7 +177,7 @@ def update_onde(t):
     #print(dt, dl/np.max(c))
     champ = np.roll(champ, shift=-1, axis=0)
     futur_onde()
-    bords_onde_gauss(t, HAUTEURDEAU / 10) # A /7 on aurait un déferlement à la source...
+    bords_onde_gauss(t, AMPL) # 2m de houle pour Brest !
     condition_bord_neumann()
 
 
@@ -191,12 +193,27 @@ def savebin(filename):
         hauteur[:XMAX, :].tofile(f)
 
 
-vmin = -HAUTEURDEAU/7 # hauteur pour la 2d
-vmax = HAUTEURDEAU/7 # dans tous les cas, ça correspond au déferlement
+vmin = -AMPL # hauteur pour la 2d
+vmax = AMPL # dans tous les cas, ça correspond au déferlement
 cmap = "viridis"  # Coloration, voir https://matplotlib.org/stable/users/explain/colors/colormaps.html
 
 
 points_terre = (prof == 0).astype(float) # Numpy boolean masking
+H_lambd = calc_H_sur_lambd()
+print(H_lambd)
+
+valeurs = H_lambd.flatten()
+
+# Création de l'histogramme
+plt.hist(valeurs, bins=30, edgecolor='black', alpha=0.7)
+
+# Ajout de labels
+plt.xlabel("Valeurs de la matrice")
+plt.ylabel("Fréquence")
+plt.title("Histogramme des H / lambda, supposés << 1 (basse profondeur)")
+
+plt.show()
+
 # print(f"x_terre.len : {len(count)}")
 
 
@@ -230,8 +247,10 @@ if __name__ == "__main__":
 
     ax1 = fig.add_subplot(121)
     state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax, alpha = 0.5)
-    ax1.set_xticks([])
-    ax1.set_yticks([])
+    # ax1.set_xticks([])
+    # ax1.set_yticks([])
+    ax1.set_xlabel(f"Abscisse entre 0 et {dl*XMAX}m")
+    ax1.set_ylabel(f"Ordonnée entre 0 et {dl*YMAX}m")
 
     
     # ax3 = fig.add_subplot(221)
