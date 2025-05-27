@@ -4,6 +4,17 @@ import matplotlib.animation as ani
 from time import sleep
 from mpl_toolkits.mplot3d import Axes3D
 
+custom_style = {
+    'axes.labelsize': 17,
+    'xtick.labelsize': 15,
+    'ytick.labelsize': 15,
+    'legend.fontsize': 15,
+    'figure.titlesize': 15,
+    'axes.titlesize': 16,
+}
+
+plt.rcParams.update(custom_style)
+
 XMAX = 415
 YMAX = 400
 TMAX = 10.0
@@ -139,21 +150,37 @@ vmin = -HAUTEURDEAU/3
 vmax = HAUTEURDEAU/3
 sep = ","
 cmap = "viridis"  # Coloration, voir https://matplotlib.org/stable/users/explain/colors/colormaps.html
-
+ax2_z_ticks = []
 
 def UpdateState(frame):
     #sleep(0.0)
-    if(frame > 0):
+    # if(frame > 0): # pour voir le fond
+    #     return ()
+    if frame > 650 : # 400 et 650 pour les illustrations
         return ()
     temps = dt * frame
     update_h(temps)
     state.set_data(hauteur)
     if frame%20==0 :
         ax2.clear()  # Clear previous frame
-        ax2.set_xlabel("Axe x")
-        ax2.set_ylabel("Axe -z")
-        ax2.set_zlabel("Axe y")
-        ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.3)
+        # Get tick positions with desired step
+        xtick_pos = np.arange(0, hauteur.shape[1], 50)
+        ytick_pos = np.arange(0, hauteur.shape[0], 50)
+        ztick_pos = ax2.get_zticks()
+
+
+        # Set ticks and labels with scaling
+        ax2.set_xticks(xtick_pos)
+        ax2.set_yticks(ytick_pos)
+        ax2.set_xticklabels([str(x * dl) for x in xtick_pos])
+        ax2.set_yticklabels([str(y * dl) for y in ytick_pos])
+        ax2.set_zticklabels([f"{z:.2f}" for z in ax2_z_ticks])
+
+
+        ax2.set_xlabel(f"x (m)", labelpad=15)
+        ax2.set_ylabel(f"y (m)", labelpad=15)
+        ax2.set_zlabel("z (m)", labelpad=15)
+        ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
         ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
         ax2.set_zlim(-.3, .3)
         ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
@@ -167,16 +194,32 @@ if __name__ == "__main__":
 
     ax1 = fig.add_subplot(121)
     state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax1.invert_yaxis()
     # ax1.set_xticks([])
     # ax1.set_yticks([])
-    ax1.set_xlabel(f"Abscisse entre 0 et {dl*XMAX}m")
-    ax1.set_ylabel(f"Ordonnée entre 0 et {dl*YMAX}m")
+        
+    # Get tick positions with desired step
+    xtick_pos = np.arange(0, hauteur.shape[1], 50)
+    ytick_pos = np.arange(0, hauteur.shape[0], 50)
+
+    # Set ticks and labels with scaling
+    ax1.set_xticks(xtick_pos)
+    ax1.set_yticks(ytick_pos)
+    ax1.set_xticklabels([str(x * dl) for x in xtick_pos])
+    ax1.set_yticklabels([str(y * dl) for y in ytick_pos])
+
+    ax1.set_xlabel(f"x (m)")
+    ax1.set_ylabel(f"y (m)")
 
     ax2 = fig.add_subplot(122, projection='3d')
     X, Y = np.meshgrid(np.arange(XMAX), np.arange(YMAX)) # sus l'ordre des arguments... c'est mieux
     print(np.shape(X))
     print(np.shape(Y))
     surf3D = ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap = 'viridis')
+
+    ax2_z_ticks = ax2.get_zticks()
+    cbar = fig.colorbar(state, ax = ax1, shrink = 0.7)
+    cbar.set_label("z (m)")
     
     print(np.shape(hauteur))
 
