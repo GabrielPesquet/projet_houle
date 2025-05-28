@@ -3,18 +3,56 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as ani
 from time import sleep
 from mpl_toolkits.mplot3d import Axes3D
+import netCDF4 as nc
 
-XMAX = 600
-YMAX = 400
-TMAX = 10.0
-NTIMES = 1000
+# Ouvrir le fichier NetCDF
+file_path = 'south_calabria.nc'
+dataset = nc.Dataset(file_path)
+
+# Explorer les variables disponibles
+print(dataset.variables.keys())
+
+# Supposons que les variables 'lat', 'lon', et 'elevation' sont présentes
+lat = dataset.variables['lat'][:]
+lon = dataset.variables['lon'][:]
+elevation = dataset.variables['elevation'][:]
+
+# Afficher les dimensions des données
+print(lat.shape, lon.shape, elevation.shape)
+
+# Tracer un graphique simple de la bathymétrie
+plt.figure(figsize=(10, 6))
+plt.contourf(lon, lat, elevation, cmap='viridis')
+plt.colorbar(label='Profondeur (m)')
+plt.xlabel('Longitude')
+plt.ylabel('Latitude')
+plt.title('Bathymétrie')
+plt.show()
+
+# Fermer le dataset
+dataset.close()
+
+latitude_range = max(lat) - min(lat)
+longitude_range = max(lon) - min(lon)
+
+
+XMAX = 500 # longitude
+YMAX = 500
+TMAX = 10000.0
+NTIMES = 100000
 OUTPUT = 0
-HAUTEURDEAU = .2
+HAUTEURDEAU = .2 # sensé être inutilisé ici
+AMPL = 2. # houle de 2m
 dt = TMAX / NTIMES
 STEP = 1 # le pas de downsampling dans l'affichage 3D
-dl = 0.02
+dl = 2
 g = 9.81
-pulsation = 5.0
+pulsation = 2*np.pi/10 # houle avec période de T = 10s
+
+longitude_moyenne = 48 * np.pi / 180 # à la louche
+dl = longitude_range / XMAX * np.cos(longitude_moyenne) * 111.32 * 1000 # cf formule
+print(f"dl : {dl}")
+
 
 
 cuves = [
@@ -48,39 +86,37 @@ def laplacien(champ):
 
 
 def calc_c(prof):
-    return np.sqrt(g * prof)
+    for x in range(XMAX):
+        for y in range(YMAX):
+            #print(prof[y][x])
+            assert prof[y][x] < 1000
+    return np.sqrt(g * abs(prof)) # WARNING au abs
 
 
 
 def init():
     global prof, hauteur
     hauteur.fill(0)
-    prof.fill(HAUTEURDEAU)
+    prof.fill(0)
     # Plan incliné
-    prof[:, 0 : XMAX] = np.repeat(np.linspace(HAUTEURDEAU, HAUTEURDEAU * 1, YMAX)[:, np.newaxis], XMAX, axis=1)
-    init_test_submerged_breakwater()
+    init_brest()
 
-def init_test_reflexion():
-    global prof
-    left = 3 * XMAX//4
-    right = left + XMAX//16
-    for x in range(left, right) :
-        for y in range(YMAX):
-            prof[y][x] = HAUTEURDEAU - (x-left)/(right-left) * HAUTEURDEAU * 1
 
-def init_test_submerged_breakwater():
+def init_brest():
     global prof
-    left = 2 * XMAX//4
-    right = left + XMAX//5
-    mid = (left+right)/2
-    for x in range(left, right) :
+    for x in range(XMAX): 
         for y in range(YMAX):
-            prof[y][x] = HAUTEURDEAU - (x-left)*(x-right)/((mid-left)*(mid-right)) * HAUTEURDEAU * 0.8
+            prof[y][x] = - elevation[y][x]
+            if np.isnan(prof[y][x]):
+                prof[y][x] = 0
+            print("", end="")
+    
 
 # set_to_cuve(0)
 
 
 prof = np.zeros((YMAX, XMAX))
+print(prof.shape)
 hauteur = np.zeros((YMAX, XMAX))
 champ = np.zeros((3, YMAX, XMAX))
 points_de_deferlement = np.zeros((YMAX, XMAX))
@@ -89,15 +125,19 @@ init()
 c = calc_c(prof)
 #set_to_cuve(0)
 #print(dt)
-dt = min(TMAX / NTIMES, dl / np.max(c))
+dt = min(TMAX / NTIMES, dl / np.max(c) * 0.6) # nombre de courant minimal qu'on impose : 0.6
 #print(dt)
 
 
 
-
+def calc_H_sur_lambd(): 
+    H = prof
+    T = 2*np.pi / pulsation
+    lambd = T * c
+    return H / lambd
 
 def calcul_courant(x, y):
-    c = calc_c(x, y)
+    c = calc_c(x, y) # probablement pas nécessaire
     nombre_de_courant = c*dt/dl
     print(f"Courant : {nombre_de_courant}")
 
@@ -111,7 +151,7 @@ def gaussian(x, mu, sigma):
 
 
 def bords_onde_gauss(t, amplitude):
-    mu, sigma = YMAX / 2, YMAX * 0.04
+    mu, sigma = YMAX / 2, YMAX * 0.4 # On élargit beaucoup pour Brest !
     x_gen = 1
     champ[2, YMAX // 6 : 5 * YMAX // 6, x_gen] = gaussian(
         np.arange(YMAX // 6, 5 * YMAX // 6), mu, sigma
@@ -131,11 +171,13 @@ def condition_bord_dirichlet(): # marche pas trop
 
 def update_onde(t):
     global champ
-    assert dt < dl / np.max(c)
+    if not dt<dl/np.max(c) :
+        print(f"Problème de courant : dt : {dt}, quot : {dl/np.max(c)}, dl : {dl}, c max : {np.max(c)}")
+        assert False
     #print(dt, dl/np.max(c))
     champ = np.roll(champ, shift=-1, axis=0)
     futur_onde()
-    bords_onde_gauss(t, HAUTEURDEAU / 3) # A /7 on aurait un déferlement à la source...
+    bords_onde_gauss(t, AMPL) # 2m de houle pour Brest !
     condition_bord_neumann()
 
 
@@ -151,9 +193,28 @@ def savebin(filename):
         hauteur[:XMAX, :].tofile(f)
 
 
-vmin = -HAUTEURDEAU/5
-vmax = HAUTEURDEAU/5
+vmin = -AMPL # hauteur pour la 2d
+vmax = AMPL # dans tous les cas, ça correspond au déferlement
 cmap = "viridis"  # Coloration, voir https://matplotlib.org/stable/users/explain/colors/colormaps.html
+
+
+points_terre = (prof == 0).astype(float) # Numpy boolean masking
+H_lambd = calc_H_sur_lambd()
+print(H_lambd)
+
+valeurs = H_lambd.flatten()
+
+# Création de l'histogramme
+plt.hist(valeurs, bins=30, edgecolor='black', alpha=0.7)
+
+# Ajout de labels
+plt.xlabel("Valeurs de la matrice")
+plt.ylabel("Fréquence")
+plt.title("Histogramme des H / lambda, supposés << 1 (basse profondeur)")
+
+plt.show()
+
+# print(f"x_terre.len : {len(count)}")
 
 
 def UpdateState(frame):
@@ -161,20 +222,21 @@ def UpdateState(frame):
     temps = dt * frame
     update_h(temps)
     state.set_data(hauteur)
-    if frame%20 == 0 :
+    #ax1.imshow(points_terre, cmap="Greens")
+
+
+    if frame%1000 == 0 :
         ax2.clear()  # Clear previous frame
         ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
-        ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey', alpha = 0.6)
-        
+        ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
         ponts_deferl = [(x, y) for x in range(XMAX) for y in range(YMAX) if does_deferle(x, y)]
         if ponts_deferl:
             x_deferl, y_deferl = zip(*ponts_deferl)  # Décompacte en deux listes
         else:
             x_deferl, y_deferl = [], []
-        z_deferl = np.array([hauteur[y_deferl[i]][x_deferl[i]] for i in range(len(x_deferl))])
-        print(f"Nb déferl : {len(z_deferl)}")
-        ax2.scatter(x_deferl, y_deferl, z_deferl, color="black" )
-        ax2.set_zlim(-.3, .3)
+        z_deferl = [prof[y_deferl[i]][x_deferl[i]] for i in range(len(x_deferl))]
+        ax2.scatter(x_deferl, y_deferl, z_deferl, color="red" )
+        ax2.set_zlim(-200, 200)
         ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
         print(f"{frame} -> {np.max(hauteur)}")
     return (state,)
@@ -184,12 +246,16 @@ if __name__ == "__main__":
     fig = plt.figure("Affichage", figsize=(20, 10))
 
     ax1 = fig.add_subplot(121)
-    ax1.invert_yaxis()
-    state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax, alpha = 0.8)
+    state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax, alpha = 0.5)
     # ax1.set_xticks([])
     # ax1.set_yticks([])
     ax1.set_xlabel(f"Abscisse entre 0 et {dl*XMAX}m")
     ax1.set_ylabel(f"Ordonnée entre 0 et {dl*YMAX}m")
+
+    
+    # ax3 = fig.add_subplot(221)
+    # ax1.imshow(points_terre, cmap="Greens")
+    ax1.imshow(points_terre, cmap="Greens")
 
     ax2 = fig.add_subplot(122, projection='3d')
     X, Y = np.meshgrid(np.arange(XMAX), np.arange(YMAX)) # sus l'ordre des arguments... c'est mieux

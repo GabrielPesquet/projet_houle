@@ -4,23 +4,25 @@ import matplotlib.animation as ani
 from time import sleep
 from mpl_toolkits.mplot3d import Axes3D
 import netCDF4 as nc
-import pandas as pd
+from scipy.ndimage import zoom
 
 # Ouvrir le fichier NetCDF
-file_path = 'penmarch.csv'
-# Load the CSV file, skipping the units row
-df = pd.read_csv(file_path, skiprows=[1])
+file_path = 'penmarch.nc'
+dataset = nc.Dataset(file_path)
 
 # Explorer les variables disponibles
-print(df)
+print(dataset.variables.keys())
 
 # Supposons que les variables 'lat', 'lon', et 'elevation' sont présentes
-lat = df['latitude'].values
-lon = df['longitude'].values
-elevation = df['elevation'].values
+lat = dataset.variables['latitude'][:]
+lon = dataset.variables['longitude'][:]
+elevation = dataset.variables['elevation'][:]
+
+# lat = zoom(lat, zoom=5, order=2) # interpolation à un ordre pour augmenter les infos de bathymétrie
+# lon = zoom(lon, zoom=5, order=2) # interpolation à un ordre pour augmenter les infos de bathymétrie
 
 # Afficher les dimensions des données
-print(lat.shape, lon.shape, elevation.shape)
+print("lat, lon, elevantion shape : ", lat.shape, lon.shape, elevation.shape)
 
 # Tracer un graphique simple de la bathymétrie
 plt.figure(figsize=(10, 6))
@@ -32,12 +34,21 @@ plt.title('Bathymétrie')
 plt.show()
 
 
+zoom_factor = 5
+
+elevation[np.isnan(elevation)] = 0.  # Replace NaNs with 0
+elevation = zoom(elevation, zoom=zoom_factor, order=1) # interpolation à un ordre pour augmenter les infos de bathymétrie
+
+print(elevation)
+# Fermer le dataset
+dataset.close()
+
 latitude_range = max(lat) - min(lat)
 longitude_range = max(lon) - min(lon)
 
 
-XMAX = 1247 # longitude
-YMAX = 741
+XMAX = 500 # longitude
+YMAX = 500
 TMAX = 10000.0
 NTIMES = 100000
 OUTPUT = 0
@@ -53,6 +64,9 @@ longitude_moyenne = 48 * np.pi / 180 # à la louche
 dl = longitude_range / XMAX * np.cos(longitude_moyenne) * 111.32 * 1000 # cf formule
 print(f"dl : {dl}")
 
+
+X = np.arange(0, XMAX)
+Y = np.arange(0, YMAX)
 
 
 cuves = [
@@ -108,7 +122,7 @@ def init_brest():
         for y in range(YMAX):
             prof[y][x] = - elevation[y][x]
             if np.isnan(prof[y][x]):
-                prof[y][x] = 0
+                prof[y][x] = -12
             print("", end="")
     
 
@@ -151,7 +165,7 @@ def gaussian(x, mu, sigma):
 
 
 def bords_onde_gauss(t, amplitude):
-    mu, sigma = YMAX / 2, YMAX * 0.4 # On élargit beaucoup pour Brest !
+    mu, sigma = YMAX / 2, YMAX * 0.1 # On élargit beaucoup pour Brest !
     x_gen = 1
     champ[2, YMAX // 6 : 5 * YMAX // 6, x_gen] = gaussian(
         np.arange(YMAX // 6, 5 * YMAX // 6), mu, sigma
@@ -185,6 +199,12 @@ def update_h(t):
     global hauteur
     hauteur.fill(0)
     update_onde(t)
+    attenuation = 0
+    points_deferl_mask = (champ[1] > prof*1/7)
+    
+    num_deferl_mask_points = np.sum(points_deferl == True)
+    print("Number of déferl points masqués :", num_deferl_mask_points)
+    champ[1] = champ[1] * (1 - points_deferl_mask + points_deferl_mask * attenuation)
     hauteur[:] = champ[1]
 
 
@@ -198,55 +218,72 @@ vmax = AMPL # dans tous les cas, ça correspond au déferlement
 cmap = "viridis"  # Coloration, voir https://matplotlib.org/stable/users/explain/colors/colormaps.html
 
 
-points_terre = (prof == 0).astype(float) # Numpy boolean masking
+points_terre = (prof <= 0).astype(float) # Numpy boolean masking
 H_lambd = calc_H_sur_lambd()
 print(H_lambd)
 
+print("Points terre shape : ", points_terre.shape)
+
 valeurs = H_lambd.flatten()
 
-# Création de l'histogramme
-plt.hist(valeurs, bins=30, edgecolor='black', alpha=0.7)
+# # Création de l'histogramme
+# plt.hist(valeurs, bins=30, edgecolor='black', alpha=0.7)
 
-# Ajout de labels
-plt.xlabel("Valeurs de la matrice")
-plt.ylabel("Fréquence")
-plt.title("Histogramme des H / lambda, supposés << 1 (basse profondeur)")
+# # Ajout de labels
+# plt.xlabel("Valeurs de la matrice")
+# plt.ylabel("Fréquence")
+# plt.title("Histogramme des H / lambda, supposés << 1 (basse profondeur)")
 
-plt.show()
+# plt.show()
 
 # print(f"x_terre.len : {len(count)}")
 
 
 def UpdateState(frame):
     #sleep(0.0)
+    global hauteur
     temps = dt * frame
     update_h(temps)
     state.set_data(hauteur)
+    points_deferl = (abs(hauteur) > 1/7 * abs(prof)).astype(float) # Numpy boolean masking
+    
+    # if frame%2==0: 
+    #     points_deferl = np.ones_like(hauteur)
+
+    state_deferl.set_data(points_deferl)
+    
+    num_deferl_points = np.sum(points_deferl == 1.0)
+    print("Number of déferl points:", num_deferl_points)
     #ax1.imshow(points_terre, cmap="Greens")
 
 
-    if frame%1000 == 0 :
-        ax2.clear()  # Clear previous frame
-        ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
-        ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
-        ponts_deferl = [(x, y) for x in range(XMAX) for y in range(YMAX) if does_deferle(x, y)]
-        if ponts_deferl:
-            x_deferl, y_deferl = zip(*ponts_deferl)  # Décompacte en deux listes
-        else:
-            x_deferl, y_deferl = [], []
-        z_deferl = [prof[y_deferl[i]][x_deferl[i]] for i in range(len(x_deferl))]
-        ax2.scatter(x_deferl, y_deferl, z_deferl, color="red" )
-        ax2.set_zlim(-200, 200)
-        ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
-        print(f"{frame} -> {np.max(hauteur)}")
-    return (state,)
+    # if frame%1000 == 0 :
+    #     ax2.clear()  # Clear previous frame
+    #     ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
+    #     ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
+    #     ponts_deferl = [(x, y) for x in range(XMAX) for y in range(YMAX) if does_deferle(x, y)]
+    #     if ponts_deferl:
+    #         x_deferl, y_deferl = zip(*ponts_deferl)  # Décompacte en deux listes
+    #     else:
+    #         x_deferl, y_deferl = [], []
+    #     z_deferl = [prof[y_deferl[i]][x_deferl[i]] for i in range(len(x_deferl))]
+    #     ax2.scatter(x_deferl, y_deferl, z_deferl, color="red" )
+    #     ax2.set_zlim(-200, 200)
+    #     ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
+    #     print(f"{frame} -> {np.max(hauteur)}")
+    return (state, state_deferl)
 
 
 if __name__ == "__main__":
     fig = plt.figure("Affichage", figsize=(20, 10))
 
     ax1 = fig.add_subplot(121)
+    ax1.imshow(points_terre, cmap="Greens")
     state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax, alpha = 0.5)
+    points_deferl = (abs(hauteur) > 1/7 * abs(prof)).astype(float) # Numpy boolean masking
+    state_deferl = ax1.matshow(points_deferl, cmap="grey", alpha = 0.7, vmin=0., vmax=1.)
+
+    ax1.invert_yaxis()
     # ax1.set_xticks([])
     # ax1.set_yticks([])
     ax1.set_xlabel(f"Abscisse entre 0 et {dl*XMAX}m")
@@ -255,14 +292,16 @@ if __name__ == "__main__":
     
     # ax3 = fig.add_subplot(221)
     # ax1.imshow(points_terre, cmap="Greens")
-    ax1.imshow(points_terre, cmap="Greens")
 
     ax2 = fig.add_subplot(122, projection='3d')
-    X, Y = np.meshgrid(np.arange(XMAX), np.arange(YMAX)) # sus l'ordre des arguments... c'est mieux
+    X_meshed, Y_meshed= np.meshgrid(X, Y) # sus l'ordre des arguments... c'est mieux
+    print("X, Y, hauteur_meshed shape : ")
     print(np.shape(X))
     print(np.shape(Y))
+    print(np.shape(X_meshed))
+    print(np.shape(Y_meshed))
     print(np.shape(hauteur))
-    surf3D = ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap = 'viridis')
+    surf3D = ax2.plot_surface(X_meshed, Y_meshed, hauteur, cmap = 'viridis')
 
     anim = ani.FuncAnimation(
         fig,

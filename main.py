@@ -154,8 +154,8 @@ ax2_z_ticks = []
 
 def UpdateState(frame):
     #sleep(0.0)
-    # if(frame > 0): # pour voir le fond
-    #     return ()
+    if(frame > 0): # pour voir le fond
+        return ()
     if frame > 650 : # 400 et 650 pour les illustrations
         return ()
     temps = dt * frame
@@ -180,7 +180,7 @@ def UpdateState(frame):
         ax2.set_xlabel(f"x (m)", labelpad=15)
         ax2.set_ylabel(f"y (m)", labelpad=15)
         ax2.set_zlabel("z (m)", labelpad=15)
-        ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.7)
+        ax2.plot_surface(X[::STEP], Y[::STEP], hauteur[::STEP], cmap='viridis', alpha=0.3)
         ax2.plot_surface(X[::STEP], Y[::STEP], -prof[::STEP], cmap='grey')
         ax2.set_zlim(-.3, .3)
         ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
