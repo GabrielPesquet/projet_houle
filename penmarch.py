@@ -5,6 +5,24 @@ from time import sleep
 from mpl_toolkits.mplot3d import Axes3D
 import netCDF4 as nc
 from scipy.ndimage import zoom
+from matplotlib.colors import ListedColormap
+
+# Custom colormap: [R, G, B, A]
+transparent_green = ListedColormap([[0, 0, 0, 0],    # transparent for 0
+                                    [0.0, 0.4, 0.0, 1]])   # green for 1
+
+
+
+custom_style = {
+    'axes.labelsize': 17,
+    'xtick.labelsize': 15,
+    'ytick.labelsize': 15,
+    'legend.fontsize': 15,
+    'figure.titlesize': 15,
+    'axes.titlesize': 16,
+}
+
+plt.rcParams.update(custom_style)
 
 # Ouvrir le fichier NetCDF
 file_path = 'penmarch.nc'
@@ -25,7 +43,7 @@ elevation = dataset.variables['elevation'][:]
 print("lat, lon, elevantion shape : ", lat.shape, lon.shape, elevation.shape)
 
 # Tracer un graphique simple de la bathymétrie
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(20, 12))
 plt.contourf(lon, lat, elevation, cmap='viridis')
 plt.colorbar(label='Profondeur (m)')
 plt.xlabel('Longitude')
@@ -199,8 +217,8 @@ def update_h(t):
     global hauteur
     hauteur.fill(0)
     update_onde(t)
-    attenuation = 0
-    points_deferl_mask = (champ[1] > prof*1/7)
+    attenuation = 1
+    points_deferl_mask = (champ[1] > 0)
     
     num_deferl_mask_points = np.sum(points_deferl == True)
     print("Number of déferl points masqués :", num_deferl_mask_points)
@@ -272,16 +290,17 @@ def UpdateState(frame):
     #     ax2.set_box_aspect([XMAX,YMAX,min(XMAX,YMAX)])
     #     print(f"{frame} -> {np.max(hauteur)}")
     return (state, state_deferl)
+    # return (state, )
 
 
 if __name__ == "__main__":
     fig = plt.figure("Affichage", figsize=(20, 10))
 
-    ax1 = fig.add_subplot(121)
-    ax1.imshow(points_terre, cmap="Greens")
+    ax1 = fig.add_subplot()
     state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax, alpha = 0.5)
+    ax1.imshow(points_terre, cmap=transparent_green)
     points_deferl = (abs(hauteur) > 1/7 * abs(prof)).astype(float) # Numpy boolean masking
-    state_deferl = ax1.matshow(points_deferl, cmap="grey", alpha = 0.7, vmin=0., vmax=1.)
+    state_deferl = ax1.matshow(points_deferl, cmap="grey", alpha = 0.3, vmin=0., vmax=1.)
 
     ax1.invert_yaxis()
     # ax1.set_xticks([])
@@ -293,7 +312,7 @@ if __name__ == "__main__":
     # ax3 = fig.add_subplot(221)
     # ax1.imshow(points_terre, cmap="Greens")
 
-    ax2 = fig.add_subplot(122, projection='3d')
+    #ax2 = fig.add_subplot(122, projection='3d')
     X_meshed, Y_meshed= np.meshgrid(X, Y) # sus l'ordre des arguments... c'est mieux
     print("X, Y, hauteur_meshed shape : ")
     print(np.shape(X))
@@ -301,7 +320,19 @@ if __name__ == "__main__":
     print(np.shape(X_meshed))
     print(np.shape(Y_meshed))
     print(np.shape(hauteur))
-    surf3D = ax2.plot_surface(X_meshed, Y_meshed, hauteur, cmap = 'viridis')
+    #surf3D = ax2.plot_surface(X_meshed, Y_meshed, hauteur, cmap = 'viridis')
+
+    xtick_pos = np.arange(0, hauteur.shape[1], 50)
+    ytick_pos = np.arange(0, hauteur.shape[0], 50)
+
+    # Set ticks and labels with scaling
+    ax1.set_xticks(xtick_pos)
+    ax1.set_yticks(ytick_pos)
+    ax1.set_xticklabels([str(np.floor(x * dl)) for x in xtick_pos])
+    ax1.set_yticklabels([str(np.floor(y * dl)) for y in ytick_pos])
+
+    ax1.set_xlabel(f"x (m)")
+    ax1.set_ylabel(f"y (m)")
 
     anim = ani.FuncAnimation(
         fig,
