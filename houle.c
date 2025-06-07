@@ -86,8 +86,6 @@ double laplacien(double **champ, int x, int y)
 
 double calc_c(double lambda, int x, int y)
 {
-	// ATTENTTION : lambda peut varier, c'est la pulsation qui bouge pas
-	// Re ATTENTTION : jsp si c'est moi qui aimis ça, il faudrait revoir toute la manière dont sont traitées les ondes...
 	
 	if (MODEPROF == 1) {
 		//fprintf(stderr, "%lf \n", sqrt(g * prof[x][y])*dt/dl);
@@ -113,12 +111,8 @@ void futur_onde(onde w, int x, int y)
 {
 	double c = calc_c(w.lambda, x, y);
 	double lap = laplacien(w.champ[1], x, y);
-	// erreur (homogénéité) dans l'Overleaf ? p.12
-	// C'est quoi coeffrot ? 
-	// Ah bah ça vaut 0...
-	// Re : c'est un vestige ...
 	w.champ[2][x][y] = (sq(dt * c) * lap + 2. * w.champ[1][x][y] - w.champ[0][x][y]) ; 
-					  //(1 + 0.* sq(dt*c/dl) ); // - dt*dt*coeffrot(x)*sq(w.champ[1][x][y] - w.champ[0][x][y]);
+					  // - dt*dt*coeffrot(x)*sq(w.champ[1][x][y] - w.champ[0][x][y]);
 }
 
 void update_onde(onde w, double t)
