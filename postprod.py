@@ -5,8 +5,7 @@ import numpy as np
 import itertools as it
 import time
 
-# Informations sur les images à lire (ici, 200x200 en flottants dans [-1.2, 1.2], séparés par des virgules)
-XMAX = 500# X
+# Informations sur les images à lire 
 YMAX = 500# Y
 N_Times = 5000
 vmin = -1.2
