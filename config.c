@@ -7,7 +7,7 @@ void init_cste(double cste)
 		for (int y = 0; y < YMAX; y++)
 		{
 			hauteur[x][y] = 0;
-			prof[x][y] = cste; // ! A 4 ca dvg, pas à 3.........
+			prof[x][y] = cste; 
 							   // prof[x][y] = 10 + (1-0.5 * (double) x/XMAX)*4 + sq((double) y/YMAX - 0.5)*6;
 		}
 	}
@@ -73,8 +73,6 @@ void limites_onde_gauss(onde w, double t)
 	double sigma = 20.; // Pourquoi pas. Re : Pourquoi pas en effet 
 	double c;
 	int x_gen = 3;
-	//fprintf(stderr, "Au bord : %lf, ", gaussian(YMAX/6, mu, sigma));
-	//fprintf(stderr, "au centre : %lf\n", gaussian(YMAX/2, mu, sigma));
 	for (int y = YMAX / 6; y < 5 * YMAX / 6; y++)
 	{
 		c = calc_c(w.lambda, x_gen, y);
