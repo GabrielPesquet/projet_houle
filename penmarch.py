@@ -31,7 +31,6 @@ dataset = nc.Dataset(file_path)
 # Explorer les variables disponibles
 print(dataset.variables.keys())
 
-# Supposons que les variables 'lat', 'lon', et 'elevation' sont présentes
 lat = dataset.variables['latitude'][:]
 lon = dataset.variables['longitude'][:]
 elevation = dataset.variables['elevation'][:]
@@ -39,10 +38,10 @@ elevation = dataset.variables['elevation'][:]
 # lat = zoom(lat, zoom=5, order=2) # interpolation à un ordre pour augmenter les infos de bathymétrie
 # lon = zoom(lon, zoom=5, order=2) # interpolation à un ordre pour augmenter les infos de bathymétrie
 
-# Afficher les dimensions des données
+# dimensions des données
 print("lat, lon, elevantion shape : ", lat.shape, lon.shape, elevation.shape)
 
-# Tracer un graphique simple de la bathymétrie
+# graphique  de la bathymétrie
 plt.figure(figsize=(20, 12))
 plt.contourf(lon, lat, elevation, cmap='viridis')
 plt.colorbar(label='Profondeur (m)')
@@ -217,12 +216,23 @@ def update_h(t):
     global hauteur
     hauteur.fill(0)
     update_onde(t)
-    attenuation = 1
-    points_deferl_mask = (champ[1] > 0)
+    # attenuation = np.clip((prof / 20)**2, 0, 1) # diverge je crois
+    attenuation = 1 - np.exp(-prof / 2)  # --> on prend 14m car amplitude de 2m dont 1/7, condition de déferlement (?)
+    # attenuation = np.clip(attenuation, 0, 1)
+    ones = np.ones_like(champ[1])
+    points_deferl_mask = (champ[1] > prof * 1/7)
     
-    num_deferl_mask_points = np.sum(points_deferl == True)
+    # Idée d'annuler des dérivées semble pas évidente à implémenter...
+
+    # champ[2, points_deferl_mask] = champ[2, 1, :]  # Bord bas
+    # champ[2, YMAX-1, :] = champ[2, YMAX-2, :]  # Bord haut
+    # champ[2, :, 0] = champ[2, :, 1]  # Bord gauche
+    # champ[2, :, XMAX-1] = champ[2, :, XMAX-2]  # Bord droit
+
+
+    num_deferl_mask_points = np.sum(points_deferl_mask == True)
     print("Number of déferl points masqués :", num_deferl_mask_points)
-    champ[1] = champ[1] * (1 - points_deferl_mask + points_deferl_mask * attenuation)
+    #champ[1] = champ[1] * attenuation
     hauteur[:] = champ[1]
 
 
@@ -300,7 +310,7 @@ if __name__ == "__main__":
     state = ax1.matshow(hauteur, cmap=cmap, vmin=vmin, vmax=vmax, alpha = 0.5)
     ax1.imshow(points_terre, cmap=transparent_green)
     points_deferl = (abs(hauteur) > 1/7 * abs(prof)).astype(float) # Numpy boolean masking
-    state_deferl = ax1.matshow(points_deferl, cmap="grey", alpha = 0.3, vmin=0., vmax=1.)
+    state_deferl = ax1.matshow(points_deferl, cmap="grey", alpha = 0., vmin=0., vmax=1.)
 
     ax1.invert_yaxis()
     # ax1.set_xticks([])
@@ -328,8 +338,8 @@ if __name__ == "__main__":
     # Set ticks and labels with scaling
     ax1.set_xticks(xtick_pos)
     ax1.set_yticks(ytick_pos)
-    ax1.set_xticklabels([str(np.floor(x * dl)) for x in xtick_pos])
-    ax1.set_yticklabels([str(np.floor(y * dl)) for y in ytick_pos])
+    ax1.set_xticklabels([str(int(x * dl)) for x in xtick_pos])
+    ax1.set_yticklabels([str(int(y * dl)) for y in ytick_pos])
 
     ax1.set_xlabel(f"x (m)")
     ax1.set_ylabel(f"y (m)")
@@ -345,4 +355,5 @@ if __name__ == "__main__":
     )
 
     plt.show()
+    print(f"dl : {dl}")
     print(f"Max : {np.max(hauteur)}")
