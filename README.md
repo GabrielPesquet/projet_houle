@@ -1,1 +1,4 @@
-Projet sur la modélisation de la houle, avec un solveur élémentaire à schéma explicite pour l'équation des ondes. 
+Project on swell deviation modelling and simulations.
+To start see makefile.
+Different initial conditions for PDE solver on configs.
+One of the other branch made by Axel Choné
